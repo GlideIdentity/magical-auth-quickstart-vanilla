@@ -208,8 +208,13 @@
         </section>
     </div>
 
-    <!-- Load the web-client-sdk from local npm package -->
+    <!-- Load the web-client-sdk -->
+    <!-- Option 1: From local npm package (default - works offline) -->
     <script src="/sdk/web-client-sdk.min.js"></script>
+    
+    <!-- Option 2: From CDN (comment out the above and uncomment one below) -->
+    <!-- <script src="https://unpkg.com/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script> -->
     <!-- Main application script -->
     <script src="app.js"></script>
 </body>

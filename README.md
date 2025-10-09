@@ -130,6 +130,25 @@ Now that you've seen it work:
 
 - **[SDK Documentation](https://docs.glideapi.com/)** - Full SDK reference and API docs
 
+## 📦 SDK Loading Options
+
+The quickstart supports multiple ways to load the SDK:
+
+### Default: NPM Package (Recommended)
+```javascript
+// Already configured - SDK served from node_modules
+<script src="/sdk/web-client-sdk.min.js"></script>
+```
+
+### Alternative: CDN
+```html
+<!-- unpkg (auto-syncs with npm) -->
+<script src="https://unpkg.com/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script>
+
+<!-- jsDelivr (auto-syncs with npm) -->
+<script src="https://cdn.jsdelivr.net/npm/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script>
+```
+
 ## 🌟 Why Vanilla JavaScript?
 
 - **No build step** - Just npm install and run
