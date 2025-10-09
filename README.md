@@ -8,6 +8,10 @@ Experience carrier-grade phone authentication in **2 minutes**. No SMS, no delay
 # Clone and install
 npm install
 
+# Copy environment file and add your API key
+cp env.example .env
+# Then edit .env and replace 'your_api_key_here' with your actual API key
+
 # Run it!
 npm start
 ```
