@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Experience carrier-grade phone authentication in minutes. No SMS, no delays, no fraud - just instant verification through SIM cards.">
+    <title>Magical Auth Quick Start - Vanilla JS</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="glide-logo.svg">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <img src="glide-logo.svg" alt="Glide Identity" class="header-logo" width="40" height="40">
+            <span class="header-company">Glide Identity</span>
+        </div>
+        <h1>Magical Auth Quick Start</h1>
+        <p>Test carrier-grade phone verification in minutes. No SMS, no delays, no fraud.</p>
+    </header>
+
+    <div class="container">
+        <!-- Flow Mode Toggle -->
+        <section class="section mode-toggle-section">
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="highlevel">
+                    <span class="mode-icon">⚡</span>
+                    High Level
+                </button>
+                <button class="mode-btn" data-mode="granular">
+                    <span class="mode-icon">🔧</span>
+                    Granular
+                </button>
+            </div>
+            <p class="mode-description" id="modeDescription">
+                Simple one-click authentication flow
+            </p>
+        </section>
+
+        <!-- Flow Type Section -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon">📱</div>
+                <div class="section-title">
+                    <h2>Flow Type</h2>
+                    <p>Choose what you want to do with the phone verification</p>
+                </div>
+            </div>
+            
+            <div class="card-grid two-columns">
+                <div class="card selected" data-flow="verify" id="verifyCard">
+                    <div class="card-icon">✓</div>
+                    <h3>Verify Phone Number</h3>
+                    <p>Verify if phone matches SIM card through carrier network</p>
+                </div>
+                
+                <div class="card" data-flow="get" id="getCard">
+                    <div class="card-icon">📲</div>
+                    <h3>Get Phone Number</h3>
+                    <p>Retrieve phone number from SIM card with carrier verification</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Phone Input Section (only for verify flow) -->
+        <section class="section" id="phoneInputSection">
+            <div class="section-header">
+                <div class="section-icon">📞</div>
+                <div class="section-title">
+                    <h2>Phone Number to Verify</h2>
+                    <p>Enter the number you want to verify against the SIM card</p>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <input 
+                    type="tel"
+                    id="phoneInput"
+                    placeholder="+1 555 123 4567"
+                />
+            </div>
+        </section>
+
+        <!-- High-Level Flow -->
+        <section class="section" id="highLevelSection">
+            <div class="section-header">
+                <div class="section-icon">🚀</div>
+                <div class="section-title">
+                    <h2>Start Authentication</h2>
+                    <p>Click below to initiate the authentication flow</p>
+                </div>
+            </div>
+            
+            <button id="startAuthButton" class="action-button">
+                <span id="buttonText">Verify Phone Number</span>
+                <span id="loadingSpinner" class="spinner hidden"></span>
+            </button>
+            
+            <!-- Error Display -->
+            <div id="errorMessage" class="error-message hidden">
+                <span class="error-icon">⚠️</span>
+                <div>
+                    <strong id="errorCode"></strong>
+                    <p id="errorText"></p>
+                </div>
+            </div>
+            
+            <!-- Result Display -->
+            <div id="resultSuccess" class="result-success hidden">
+                <h3>✅ Authentication Successful!</h3>
+                <div class="result-details" id="resultDetails"></div>
+            </div>
+        </section>
+
+        <!-- Granular Flow -->
+        <section class="section hidden" id="granularSection">
+            <div class="section-header">
+                <div class="section-icon">🔧</div>
+                <div class="section-title">
+                    <h2>Granular Authentication Steps</h2>
+                    <p>Control each step of the authentication process</p>
+                </div>
+            </div>
+            
+            <!-- Step 1: Prepare -->
+            <div class="step-card" id="step1Card">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <h4>Prepare Authentication</h4>
+                </div>
+                <p>Initialize the authentication session with the server</p>
+                
+                <button class="step-button" id="step1Button">
+                    Execute Step
+                </button>
+                
+                <div class="step-success hidden" id="step1Success"></div>
+                <div class="step-error hidden" id="step1Error"></div>
+            </div>
+            
+            <!-- Step 2: Browser Verification -->
+            <div class="step-card disabled" id="step2Card">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <h4>Browser Verification</h4>
+                </div>
+                <p>Invoke secure browser prompt for carrier verification</p>
+                
+                <button class="step-button" id="step2Button" disabled>
+                    Execute Step
+                </button>
+                
+                <div class="step-success hidden" id="step2Success"></div>
+                <div class="step-error hidden" id="step2Error"></div>
+            </div>
+            
+            <!-- Step 3: Process Result -->
+            <div class="step-card disabled" id="step3Card">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <h4>Process Verification</h4>
+                </div>
+                <p>Send credential to server for final verification</p>
+                
+                <button class="step-button" id="step3Button" disabled>
+                    Execute Step
+                </button>
+                
+                <div class="step-success hidden" id="step3Success"></div>
+                <div class="step-error hidden" id="step3Error"></div>
+            </div>
+            
+            <!-- Reset Button -->
+            <button id="resetButton" class="reset-button hidden">
+                Reset Flow
+            </button>
+            
+            <!-- Final Result Display for Granular -->
+            <div id="granularResult" class="result-success hidden">
+                <h3>✅ Authentication Successful!</h3>
+                <div class="result-details" id="granularResultDetails"></div>
+            </div>
+        </section>
+
+        <!-- Debug Mode Toggle -->
+        <section class="section debug-section">
+            <label class="debug-toggle">
+                <input type="checkbox" id="debugToggle">
+                <span>Debug Mode</span>
+            </label>
+        </section>
+
+        <!-- Debug Console -->
+        <section class="section hidden" id="debugSection">
+            <div class="section-header">
+                <div class="section-icon">🔍</div>
+                <div class="section-title">
+                    <h2>Debug Console</h2>
+                    <p>Detailed flow information</p>
+                </div>
+            </div>
+            
+            <div class="debug-console" id="debugConsole"></div>
+            
+            <button class="clear-logs-button" id="clearLogsButton">
+                Clear Logs
+            </button>
+        </section>
+    </div>
+
+    <!-- Load the web-client-sdk from local npm package -->
+    <script src="/sdk/web-client-sdk.min.js"></script>
+    <!-- Main application script -->
+    <script src="app.js"></script>
+</body>
+</html>
