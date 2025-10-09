@@ -76,7 +76,9 @@ GLIDE_API_KEY=your_api_key_here
 ### Understanding the Flow
 
 **Step 1: Prepare** → Your server talks to Glide
+
 **Step 2: Browser Prompt** → Secure carrier verification  
+
 **Step 3: Process** → Get the verified result
 
 ## 🎨 Quick Customizations
@@ -86,7 +88,6 @@ GLIDE_API_KEY=your_api_key_here
 // In public/app.js (around line 211 and 274)
 plmn: { mcc: '310', mnc: '260' }  // T-Mobile (default)
 plmn: { mcc: '310', mnc: '004' }  // Verizon
-plmn: { mcc: '310', mnc: '410' }  // AT&T
 ```
 
 ### Customize Consent Text
@@ -111,20 +112,6 @@ Works on:
 - **Chrome/Edge 128+** on Android ✅
 - **Chrome/Edge Desktop** (with phone nearby) ✅
 - **Safari** (coming soon) 🔜
-
-## 🤔 Common Questions
-
-**"Browser not supported"**
-→ Use Chrome/Edge 128+ on Android or desktop
-
-**"401 Unauthorized"**  
-→ Check your API key in `.env`
-
-**"PLMN required"**
-→ Already handled! Default is T-Mobile USA
-
-**"Cannot connect to server"**
-→ Make sure server is running (`npm start`)
 
 ## 🚀 What's Next?
 
