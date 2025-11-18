@@ -532,10 +532,9 @@ async function executeStepTwo(isRetry = false) {
                 button.disabled = false;
             }
         } else {
+            // For non-retryable errors, just show the error UI
+            // Don't call setStepLoading as it would incorrectly show "Completed"
             updateStep2UIForError();
-            
-            // Only set completed state if not retry-able
-            setStepLoading(2, false);
         }
     } finally {
         isPolling = false;
