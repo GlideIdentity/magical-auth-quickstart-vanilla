@@ -161,7 +161,7 @@ function setupEventListeners() {
     // Step 2 polling buttons
     document.getElementById('step2RetryButton').addEventListener('click', () => {
         if (extendedResponse && extendedResponse.trigger) {
-            console.log('[Granular] Retrying Link trigger');
+            addDebugLog('info', '[Granular] Retrying Link trigger');
             extendedResponse.trigger();
         }
     });
@@ -187,7 +187,7 @@ function setupEventListeners() {
             button.disabled = false;
         }
         
-        console.log('[Granular] Step 2 cancelled, ready to retry');
+        addDebugLog('info', '[Granular] Step 2 cancelled, ready to retry');
     });
     
     // Debug toggle
@@ -402,18 +402,18 @@ async function executeStepOne() {
             }
         };
         
-        console.log('[Granular] Step 1: Preparing with options:', options);
+        addDebugLog('info', '[Granular] Step 1: Preparing with options', options);
         
         stepOneResponse = await authClient.preparePhoneRequest(options);
         
-        console.log('[Granular] Step 1: Prepare response:', stepOneResponse);
+        addDebugLog('info', '[Granular] Step 1: Prepare response', stepOneResponse);
         
         showStepSuccess(1, `Session prepared. Strategy: ${stepOneResponse.authentication_strategy}`);
         enableStep(2);
         
         addDebugLog('success', 'Step 1 completed', stepOneResponse);
     } catch (error) {
-        console.error('[Granular] Step 1 Error:', error);
+        addDebugLog('error', '[Granular] Step 1 Error', error);
         showStepError(1, error.message || 'Failed to prepare authentication');
         addDebugLog('error', 'Step 1 failed', error);
     } finally {
@@ -426,6 +426,17 @@ async function executeStepTwo(isRetry = false) {
     
     // Clear error state if retrying
     if (isRetry) {
+        // Clean up existing extended response before creating a new one
+        if (extendedResponse) {
+            if (extendedResponse.cancel) {
+                extendedResponse.cancel();
+            }
+            if (extendedResponse.stop_polling) {
+                extendedResponse.stop_polling();
+            }
+            extendedResponse = null;
+        }
+        
         const errorDiv = document.getElementById('step2Error');
         if (errorDiv) errorDiv.classList.add('hidden');
         const card = document.getElementById('step2Card');
@@ -440,7 +451,7 @@ async function executeStepTwo(isRetry = false) {
     
     try {
         addDebugLog('info', 'Step 2: Invoking secure browser prompt');
-        console.log('[Granular] Step 2: About to invoke secure prompt with:', stepOneResponse);
+        addDebugLog('info', '[Granular] Step 2: About to invoke secure prompt with', stepOneResponse);
         
         // Use extended mode for better control  
         const invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, {
@@ -449,7 +460,7 @@ async function executeStepTwo(isRetry = false) {
             autoTrigger: !isRetry // Don't auto-trigger on retry
         });
         
-        console.log('[Granular] Step 2: Extended invoke result:', invokeResult);
+        addDebugLog('info', '[Granular] Step 2: Extended invoke result', invokeResult);
         
         let credential;
         if (invokeResult.strategy === 'link' || invokeResult.strategy === 'desktop') {
@@ -460,7 +471,7 @@ async function executeStepTwo(isRetry = false) {
             
             // For Link strategy, trigger if it's a retry
             if (isRetry && invokeResult.trigger) {
-                console.log('[Granular] Step 2: Triggering retry for Link strategy');
+                addDebugLog('info', '[Granular] Step 2: Triggering retry for Link strategy');
                 invokeResult.trigger();
             }
             
@@ -478,7 +489,7 @@ async function executeStepTwo(isRetry = false) {
         }
         
         stepTwoResponse = credential;
-        console.log('[Granular] Step 2: Received credential:', credential);
+        addDebugLog('info', '[Granular] Step 2: Received credential', credential);
         
         showStepSuccess(2, 'Credential obtained from browser');
         enableStep(3);
@@ -490,7 +501,7 @@ async function executeStepTwo(isRetry = false) {
             extendedResponse = null;
         }
     } catch (error) {
-        console.error('[Granular] Step 2 Error:', error);
+        addDebugLog('error', '[Granular] Step 2 Error', error);
         const errorMessage = error.message || 'Browser verification failed';
         showStepError(2, errorMessage);
         addDebugLog('error', 'Step 2 failed', error);
@@ -499,8 +510,7 @@ async function executeStepTwo(isRetry = false) {
         // Show retry option for Desktop/Link strategies
         const shouldShowRetry = extendedResponse || 
             errorMessage.toLowerCase().includes('cancel') || 
-            errorMessage.toLowerCase().includes('closed') ||
-            errorMessage.toLowerCase().includes('authentication cancelled');
+            errorMessage.toLowerCase().includes('closed');
             
         if (shouldShowRetry) {
             // Clear the card state and show retry button
@@ -539,8 +549,8 @@ async function executeStepThree() {
     
     try {
         addDebugLog('info', 'Step 3: Processing verification');
-        console.log('[Granular] Step 3: Processing with credential:', stepTwoResponse);
-        console.log('[Granular] Step 3: Using session:', stepOneResponse.session);
+        addDebugLog('info', '[Granular] Step 3: Processing with credential', stepTwoResponse);
+        addDebugLog('info', '[Granular] Step 3: Using session', stepOneResponse.session);
         
         let response;
         if (selectedFlowType === 'get') {
@@ -549,7 +559,7 @@ async function executeStepThree() {
             response = await authClient.verifyPhoneNumber(stepTwoResponse, stepOneResponse.session);
         }
         
-        console.log('[Granular] Step 3: Final response:', response);
+        addDebugLog('info', '[Granular] Step 3: Final response', response);
         
         stepThreeResponse = response;
         showStepSuccess(3, `Verification complete! Phone: ${response.phone_number} - Verified: ${response.verified ? 'Yes' : 'No'}`);
@@ -560,7 +570,7 @@ async function executeStepThree() {
         
         addDebugLog('success', 'Step 3 completed', response);
     } catch (error) {
-        console.error('[Granular] Step 3 Error:', error);
+        addDebugLog('error', '[Granular] Step 3 Error', error);
         showStepError(3, error.message || 'Verification processing failed');
         addDebugLog('error', 'Step 3 failed', error);
     } finally {
