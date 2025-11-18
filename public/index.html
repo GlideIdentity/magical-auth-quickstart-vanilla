@@ -11,7 +11,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <div class="header-brand">
+        <div class="header-brand" id="headerBrand" style="cursor: pointer;">
             <img src="glide-logo.svg" alt="Glide Identity" class="header-logo" width="40" height="40">
             <span class="header-company">Glide Identity</span>
         </div>
@@ -23,12 +23,11 @@
         <!-- Flow Mode Toggle -->
         <section class="section mode-toggle-section">
             <div class="mode-toggle">
+                <div class="toggle-slider left"></div>
                 <button class="mode-btn active" data-mode="highlevel">
-                    <span class="mode-icon">⚡</span>
                     High Level
                 </button>
                 <button class="mode-btn" data-mode="granular">
-                    <span class="mode-icon">🔧</span>
                     Granular
                 </button>
             </div>
@@ -40,7 +39,20 @@
         <!-- Flow Type Section -->
         <section class="section">
             <div class="section-header">
-                <div class="section-icon">📱</div>
+                <div class="section-icon">
+                    <!-- Toggle Switch Icon -->
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <!-- Left option - selected state -->
+                        <rect x="2" y="4" width="9" height="13" rx="1.5" stroke="black" stroke-width="2" fill="none"/>
+                        <rect x="4.5" y="7" width="4" height="4" rx="0.5" fill="black"/>
+                        <path d="M5.5 9 L6.5 10 L7.5 8.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        
+                        <!-- Right option - unselected state -->
+                        <rect x="13" y="4" width="9" height="13" rx="1.5" stroke="#999" stroke-width="1.5" fill="none"/>
+                        <rect x="15.5" y="7" width="4" height="4" rx="0.5" fill="none" stroke="#999" stroke-width="1.5"/>
+                        <circle cx="17.5" cy="14" r="1" fill="#999"/>
+                    </svg>
+                </div>
                 <div class="section-title">
                     <h2>Flow Type</h2>
                     <p>Choose what you want to do with the phone verification</p>
@@ -49,13 +61,24 @@
             
             <div class="card-grid two-columns">
                 <div class="card selected" data-flow="verify" id="verifyCard">
-                    <div class="card-icon">✓</div>
+                    <div class="card-icon">
+                        <!-- Checkmark Icon -->
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
                     <h3>Verify Phone Number</h3>
                     <p>Verify if phone matches SIM card through carrier network</p>
                 </div>
                 
                 <div class="card" data-flow="get" id="getCard">
-                    <div class="card-icon">📲</div>
+                    <div class="card-icon">
+                        <!-- Phone Icon -->
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+                            <rect x="7" y="4" width="10" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <line x1="10" y1="17" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <h3>Get Phone Number</h3>
                     <p>Retrieve phone number from SIM card with carrier verification</p>
                 </div>
@@ -65,7 +88,12 @@
         <!-- Phone Input Section (only for verify flow) -->
         <section class="section" id="phoneInputSection">
             <div class="section-header">
-                <div class="section-icon">📞</div>
+                <div class="section-icon">
+                    <!-- Phone Call Icon -->
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <div class="section-title">
                     <h2>Phone Number to Verify</h2>
                     <p>Enter the number you want to verify against the SIM card</p>
@@ -84,7 +112,12 @@
         <!-- High-Level Flow -->
         <section class="section" id="highLevelSection">
             <div class="section-header">
-                <div class="section-icon">🚀</div>
+                <div class="section-icon">
+                    <!-- Lightning Icon -->
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <div class="section-title">
                     <h2>Start Authentication</h2>
                     <p>Click below to initiate the authentication flow</p>
@@ -107,7 +140,7 @@
             
             <!-- Result Display -->
             <div id="resultSuccess" class="result-success hidden">
-                <h3>✅ Authentication Successful!</h3>
+                <h3>Authentication Successful!</h3>
                 <div class="result-details" id="resultDetails"></div>
             </div>
         </section>
@@ -115,7 +148,12 @@
         <!-- Granular Flow -->
         <section class="section hidden" id="granularSection">
             <div class="section-header">
-                <div class="section-icon">🔧</div>
+                <div class="section-icon">
+                    <!-- Settings Icon -->
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <div class="section-title">
                     <h2>Granular Authentication Steps</h2>
                     <p>Control each step of the authentication process</p>
@@ -146,9 +184,21 @@
                 </div>
                 <p>Invoke secure browser prompt for carrier verification</p>
                 
-                <button class="step-button" id="step2Button" disabled>
-                    Execute Step
-                </button>
+                <div id="step2Actions">
+                    <button class="step-button" id="step2Button" disabled>
+                        Execute Step
+                    </button>
+                    
+                    <!-- Polling buttons for Link/Desktop strategies -->
+                    <div class="button-group" id="step2PollingButtons" style="display: none;">
+                        <button class="step-button" id="step2RetryButton">
+                            Retry Open
+                        </button>
+                        <button class="reset-button" id="step2CancelButton" style="padding: 10px 20px;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
                 
                 <div class="step-success hidden" id="step2Success"></div>
                 <div class="step-error hidden" id="step2Error"></div>
@@ -177,7 +227,7 @@
             
             <!-- Final Result Display for Granular -->
             <div id="granularResult" class="result-success hidden">
-                <h3>✅ Authentication Successful!</h3>
+                <h3>Authentication Successful!</h3>
                 <div class="result-details" id="granularResultDetails"></div>
             </div>
         </section>
@@ -193,7 +243,13 @@
         <!-- Debug Console -->
         <section class="section hidden" id="debugSection">
             <div class="section-header">
-                <div class="section-icon">🔍</div>
+                <div class="section-icon">
+                    <!-- Search Icon -->
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <div class="section-title">
                     <h2>Debug Console</h2>
                     <p>Detailed flow information</p>
@@ -213,8 +269,8 @@
     <script src="/sdk/web-client-sdk.min.js"></script>
     
     <!-- Option 2: From CDN (comment out the above and uncomment one below) -->
-    <!-- <script src="https://unpkg.com/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script> -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/@glideidentity/web-client-sdk@4.4.10/dist/browser/web-client-sdk.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@glideidentity/web-client-sdk@4.4.10/dist/browser/web-client-sdk.min.js"></script> -->
     <!-- Main application script -->
     <script src="app.js"></script>
 </body>

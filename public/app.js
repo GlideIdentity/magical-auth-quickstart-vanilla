@@ -26,12 +26,15 @@ let debugLogs = [];
 let stepOneResponse = null;
 let stepTwoResponse = null;
 let stepThreeResponse = null;
+let extendedResponse = null;
+let isPolling = false;
 
 // API endpoint configuration
 const API_BASE_URL = window.location.origin; // Uses the same origin as the frontend
 const API_ENDPOINTS = {
     prepare: `${API_BASE_URL}/api/phone-auth/prepare`,
     process: `${API_BASE_URL}/api/phone-auth/process`,
+    status: `${API_BASE_URL}/api/phone-auth/status`,
     health: `${API_BASE_URL}/api/health`
 };
 
@@ -54,9 +57,21 @@ document.addEventListener('DOMContentLoaded', function() {
         authClient = new window.GlideWebClientSDK.PhoneAuthClient({
             endpoints: {
                 prepare: API_ENDPOINTS.prepare,
-                process: API_ENDPOINTS.process
+                process: API_ENDPOINTS.process,
+                /* Polling Endpoint Configuration
+                   Uncomment the line below to enable polling through your backend server.
+                   If not provided, the SDK will call the Glide Magic Auth server directly.
+                   Useful for development and production when you want to proxy requests. */
+                // polling: API_ENDPOINTS.status,
             },
-            debug: true, // Enable SDK debug logging
+            debug: true, // Enable SDK debug logging to console for development purposes
+            /* Mobile DevTools Console
+               Uncomment the code below to enable an on-screen console for mobile testing.
+               This provides visibility into logs and errors on mobile devices where 
+               traditional browser DevTools are not easily accessible. */
+            // devtools: {
+            //   showMobileConsole: true
+            // },
             timeout: 30000,
             onCrossDeviceDetected: () => {
                 addDebugLog('info', 'Cross-device authentication detected (QR code shown)');
@@ -78,6 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup event listeners
     setupEventListeners();
     
+    // Set initial button state (verify is selected by default in HTML)
+    updateButtonState();
+    
     // Check server health
     checkServerHealth();
 });
@@ -87,6 +105,21 @@ document.addEventListener('DOMContentLoaded', function() {
 // ====================================================================
 
 function setupEventListeners() {
+    // Header brand click to reset
+    document.getElementById('headerBrand').addEventListener('click', () => {
+        // Reset all states
+        clearResults();
+        resetGranularFlow();
+        
+        // Reset phone input
+        document.getElementById('phoneInput').value = '';
+        
+        // Update button state
+        updateButtonState();
+        
+        addDebugLog('info', 'App reset via header click');
+    });
+    
     // Mode toggle buttons
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', handleModeToggle);
@@ -96,8 +129,9 @@ function setupEventListeners() {
     document.getElementById('verifyCard').addEventListener('click', () => selectFlow('verify'));
     document.getElementById('getCard').addEventListener('click', () => selectFlow('get'));
     
-    // Phone input - enter key
-    document.getElementById('phoneInput').addEventListener('keydown', (e) => {
+    // Phone input - enter key and update button state
+    const phoneInputElement = document.getElementById('phoneInput');
+    phoneInputElement.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             if (currentFlowMode === 'highlevel') {
                 startHighLevelAuth();
@@ -107,14 +141,54 @@ function setupEventListeners() {
         }
     });
     
+    // Update button state when phone input changes
+    phoneInputElement.addEventListener('input', updateButtonState);
+    
     // High-level auth button
     document.getElementById('startAuthButton').addEventListener('click', startHighLevelAuth);
     
     // Granular flow buttons
     document.getElementById('step1Button').addEventListener('click', executeStepOne);
-    document.getElementById('step2Button').addEventListener('click', executeStepTwo);
+    document.getElementById('step2Button').addEventListener('click', () => {
+        const button = document.getElementById('step2Button');
+        // Check if it's a retry based on button text
+        const isRetry = button && button.textContent === 'Retry Step';
+        executeStepTwo(isRetry);
+    });
     document.getElementById('step3Button').addEventListener('click', executeStepThree);
     document.getElementById('resetButton').addEventListener('click', resetGranularFlow);
+    
+    // Step 2 polling buttons
+    document.getElementById('step2RetryButton').addEventListener('click', () => {
+        if (extendedResponse && extendedResponse.trigger) {
+            console.log('[Granular] Retrying Link trigger');
+            extendedResponse.trigger();
+        }
+    });
+    
+    document.getElementById('step2CancelButton').addEventListener('click', () => {
+        if (extendedResponse && extendedResponse.stop_polling) {
+            extendedResponse.stop_polling();
+        }
+        isPolling = false;
+        
+        // Hide polling buttons first
+        const pollingBtns = document.getElementById('step2PollingButtons');
+        if (pollingBtns) pollingBtns.style.display = 'none';
+        
+        // Show error message
+        showStepError(2, 'Cancelled by user - you can retry');
+        
+        // Show retry button - do this AFTER showStepError
+        const button = document.getElementById('step2Button');
+        if (button) {
+            button.style.display = 'block';
+            button.textContent = 'Retry Step';
+            button.disabled = false;
+        }
+        
+        console.log('[Granular] Step 2 cancelled, ready to retry');
+    });
     
     // Debug toggle
     document.getElementById('debugToggle').addEventListener('change', (e) => {
@@ -144,6 +218,16 @@ function handleModeToggle(e) {
         btn.classList.toggle('active', btn.dataset.mode === mode);
     });
     
+    // Update sliding toggle
+    const slider = document.querySelector('.toggle-slider');
+    if (mode === 'granular') {
+        slider.classList.add('right');
+        slider.classList.remove('left');
+    } else {
+        slider.classList.remove('right');
+        slider.classList.add('left');
+    }
+    
     currentFlowMode = mode;
     
     // Update description
@@ -161,6 +245,9 @@ function handleModeToggle(e) {
     if (mode === 'granular') {
         resetGranularFlow();
     }
+    
+    // Update button states for new mode
+    updateButtonState();
     
     addDebugLog('info', `Flow mode changed to: ${mode}`);
 }
@@ -188,7 +275,30 @@ function selectFlow(flowType) {
         document.getElementById('phoneInput').value = '';
     }
     
+    // Update button state based on phone input
+    updateButtonState();
+    
     addDebugLog('info', `Flow type changed to: ${flowType}`);
+}
+
+// Update button disabled state based on current flow and phone input
+function updateButtonState() {
+    const button = document.getElementById('startAuthButton');
+    const step1Button = document.getElementById('step1Button');
+    const phoneInput = document.getElementById('phoneInput').value.trim();
+    
+    // Disable button if verify flow and no phone input
+    if (selectedFlowType === 'verify' && !phoneInput) {
+        button.disabled = true;
+        if (step1Button && !step1Button.textContent.includes('Completed')) {
+            step1Button.disabled = true;
+        }
+    } else if (!button.classList.contains('loading')) {
+        button.disabled = false;
+        if (step1Button && !step1Button.textContent.includes('Completed')) {
+            step1Button.disabled = false;
+        }
+    }
 }
 
 // ====================================================================
@@ -298,7 +408,7 @@ async function executeStepOne() {
         
         console.log('[Granular] Step 1: Prepare response:', stepOneResponse);
         
-        showStepSuccess(1, `✓ Session prepared. Strategy: ${stepOneResponse.authentication_strategy}`);
+        showStepSuccess(1, `Session prepared. Strategy: ${stepOneResponse.authentication_strategy}`);
         enableStep(2);
         
         addDebugLog('success', 'Step 1 completed', stepOneResponse);
@@ -311,29 +421,114 @@ async function executeStepOne() {
     }
 }
 
-async function executeStepTwo() {
+async function executeStepTwo(isRetry = false) {
     if (!authClient || !stepOneResponse) return;
     
-    setStepLoading(2, true);
+    // Clear error state if retrying
+    if (isRetry) {
+        const errorDiv = document.getElementById('step2Error');
+        if (errorDiv) errorDiv.classList.add('hidden');
+        const card = document.getElementById('step2Card');
+        if (card) {
+            card.classList.remove('error', 'completed');
+            card.classList.add('active');
+        }
+    } else {
+        // Only set loading if we're not retrying (retrying will show polling UI)
+        setStepLoading(2, true);
+    }
     
     try {
         addDebugLog('info', 'Step 2: Invoking secure browser prompt');
         console.log('[Granular] Step 2: About to invoke secure prompt with:', stepOneResponse);
         
-        stepTwoResponse = await authClient.invokeSecurePrompt(stepOneResponse);
+        // Use extended mode for better control  
+        const invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, {
+            executionMode: 'extended',
+            preventDefaultUI: false,
+            autoTrigger: !isRetry // Don't auto-trigger on retry
+        });
         
-        console.log('[Granular] Step 2: Received credential:', stepTwoResponse);
+        console.log('[Granular] Step 2: Extended invoke result:', invokeResult);
         
-        showStepSuccess(2, '✓ Credential obtained from browser');
+        let credential;
+        if (invokeResult.strategy === 'link' || invokeResult.strategy === 'desktop') {
+            // Store extended response for potential retry
+            extendedResponse = invokeResult;
+            isPolling = true;
+            updateStep2UIForPolling();
+            
+            // For Link strategy, trigger if it's a retry
+            if (isRetry && invokeResult.trigger) {
+                console.log('[Granular] Step 2: Triggering retry for Link strategy');
+                invokeResult.trigger();
+            }
+            
+            // Wait for credential - SDK handles timeout
+            const authCredential = await invokeResult.credential;
+            // Link and Desktop return AuthCredential object, extract the credential string
+            credential = authCredential.credential || authCredential;
+            isPolling = false;
+        } else if (invokeResult.strategy === 'ts43') {
+            // TS43 returns credential directly
+            credential = invokeResult.credential || invokeResult;
+        } else {
+            // Unknown strategy - handle as generic
+            credential = invokeResult.credential || invokeResult;
+        }
+        
+        stepTwoResponse = credential;
+        console.log('[Granular] Step 2: Received credential:', credential);
+        
+        showStepSuccess(2, 'Credential obtained from browser');
         enableStep(3);
+        updateStep2UIForNormal();
         
-        addDebugLog('success', 'Step 2 completed', stepTwoResponse);
+        addDebugLog('success', 'Step 2 completed', credential);
+        // Clean up extended response
+        if (extendedResponse) {
+            extendedResponse = null;
+        }
     } catch (error) {
         console.error('[Granular] Step 2 Error:', error);
-        showStepError(2, error.message || 'Browser verification failed');
+        const errorMessage = error.message || 'Browser verification failed';
+        showStepError(2, errorMessage);
         addDebugLog('error', 'Step 2 failed', error);
+        isPolling = false;
+        
+        // Show retry option for Desktop/Link strategies
+        const shouldShowRetry = extendedResponse || 
+            errorMessage.toLowerCase().includes('cancel') || 
+            errorMessage.toLowerCase().includes('closed') ||
+            errorMessage.toLowerCase().includes('authentication cancelled');
+            
+        if (shouldShowRetry) {
+            // Clear the card state and show retry button
+            const card = document.getElementById('step2Card');
+            if (card) {
+                card.classList.remove('completed');
+                card.classList.add('error');
+            }
+            
+            // Make sure polling buttons are hidden
+            const pollingBtns = document.getElementById('step2PollingButtons');
+            if (pollingBtns) pollingBtns.style.display = 'none';
+            
+            // Show retry button - do this after hiding polling buttons
+            const button = document.getElementById('step2Button');
+            if (button) {
+                button.style.display = 'block';
+                button.textContent = 'Retry Step';
+                button.disabled = false;
+            }
+        } else {
+            updateStep2UIForError();
+            
+            // Only set completed state if not retry-able
+            setStepLoading(2, false);
+        }
     } finally {
-        setStepLoading(2, false);
+        isPolling = false;
     }
 }
 
@@ -357,7 +552,7 @@ async function executeStepThree() {
         console.log('[Granular] Step 3: Final response:', response);
         
         stepThreeResponse = response;
-        showStepSuccess(3, `✓ Verification complete! Phone: ${response.phone_number}`);
+        showStepSuccess(3, `Verification complete! Phone: ${response.phone_number} - Verified: ${response.verified ? 'Yes' : 'No'}`);
         showGranularResult(response);
         
         // Show reset button
@@ -379,6 +574,16 @@ function resetGranularFlow() {
     stepTwoResponse = null;
     stepThreeResponse = null;
     
+    // Clean up extended response if exists
+    if (extendedResponse && extendedResponse.cancel) {
+        extendedResponse.cancel();
+    }
+    if (extendedResponse && extendedResponse.stop_polling) {
+        extendedResponse.stop_polling();
+    }
+    extendedResponse = null;
+    isPolling = false;
+    
     // Reset UI
     for (let i = 1; i <= 3; i++) {
         const card = document.getElementById(`step${i}Card`);
@@ -391,10 +596,15 @@ function resetGranularFlow() {
         
         button.disabled = i > 1;
         button.textContent = 'Execute Step';
+        button.style.display = 'block'; // Ensure button is visible
         
         success.classList.add('hidden');
         error.classList.add('hidden');
     }
+    
+    // Specifically hide step 2 polling buttons
+    const pollingBtns = document.getElementById('step2PollingButtons');
+    if (pollingBtns) pollingBtns.style.display = 'none';
     
     // Hide reset button and results
     document.getElementById('resetButton').classList.add('hidden');
@@ -412,22 +622,38 @@ function setLoading(isLoading) {
     const spinner = document.getElementById('loadingSpinner');
     const buttonText = document.getElementById('buttonText');
     
-    button.disabled = isLoading;
     button.classList.toggle('loading', isLoading);
     spinner.classList.toggle('hidden', !isLoading);
     
     if (isLoading) {
+        button.disabled = true;
         buttonText.textContent = 'Processing...';
     } else {
         const text = selectedFlowType === 'verify' ? 'Verify Phone Number' : 'Get Phone Number';
         buttonText.textContent = text;
+        // Update button state after loading completes
+        updateButtonState();
     }
 }
 
 function setStepLoading(step, isLoading) {
     const button = document.getElementById(`step${step}Button`);
-    button.disabled = isLoading;
-    button.textContent = isLoading ? 'Processing...' : '✓ Completed';
+    if (isLoading) {
+        button.disabled = true;
+        button.textContent = 'Processing...';
+        button.style.display = 'block'; // Ensure it's visible
+        
+        // For step 2, hide polling buttons if they exist
+        if (step === 2) {
+            const pollingBtns = document.getElementById('step2PollingButtons');
+            if (pollingBtns) pollingBtns.style.display = 'none';
+        }
+    } else {
+        // Keep button disabled after completion
+        button.disabled = true;
+        button.textContent = 'Completed';
+        button.style.display = 'block'; // Ensure it's visible
+    }
 }
 
 function showStepSuccess(step, message) {
@@ -439,8 +665,15 @@ function showStepSuccess(step, message) {
     card.classList.remove('active', 'error');
     success.textContent = message;
     success.classList.remove('hidden');
-    button.textContent = '✓ Completed';
+    button.textContent = 'Completed';
     button.disabled = true;
+    button.style.display = 'block'; // Ensure it's visible
+    
+    // For step 2, hide polling buttons if they exist
+    if (step === 2) {
+        const pollingBtns = document.getElementById('step2PollingButtons');
+        if (pollingBtns) pollingBtns.style.display = 'none';
+    }
 }
 
 function showStepError(step, message) {
@@ -459,7 +692,61 @@ function enableStep(step) {
     
     card.classList.remove('disabled');
     card.classList.add('active');
-    button.disabled = false;
+    
+    // Only enable button if it's not already completed
+    if (button.textContent !== 'Completed') {
+        button.disabled = false;
+    }
+}
+
+// UI functions for Step 2 polling state
+function updateStep2UIForPolling() {
+    const step2Actions = document.getElementById('step2Actions');
+    if (!step2Actions) return;
+    
+    // Clear any success/error states first
+    const success = document.getElementById('step2Success');
+    const error = document.getElementById('step2Error');
+    if (success) success.classList.add('hidden');
+    if (error) error.classList.add('hidden');
+    
+    // Hide normal button, show polling buttons
+    const normalBtn = document.getElementById('step2Button');
+    if (normalBtn) {
+        normalBtn.style.display = 'none';
+        normalBtn.textContent = 'Execute Step'; // Reset text
+    }
+    
+    const pollingBtns = document.getElementById('step2PollingButtons');
+    if (pollingBtns) pollingBtns.style.display = 'flex';
+}
+
+function updateStep2UIForNormal() {
+    const step2Actions = document.getElementById('step2Actions');
+    if (!step2Actions) return;
+    
+    // Show normal button, hide polling buttons
+    const normalBtn = document.getElementById('step2Button');
+    if (normalBtn) normalBtn.style.display = 'block';
+    
+    const pollingBtns = document.getElementById('step2PollingButtons');
+    if (pollingBtns) pollingBtns.style.display = 'none';
+}
+
+function updateStep2UIForError() {
+    const step2Actions = document.getElementById('step2Actions');
+    if (!step2Actions) return;
+    
+    // Show normal button for retry, hide polling buttons
+    const normalBtn = document.getElementById('step2Button');
+    if (normalBtn) {
+        normalBtn.style.display = 'block';
+        normalBtn.textContent = 'Retry Step';
+        normalBtn.disabled = false;
+    }
+    
+    const pollingBtns = document.getElementById('step2PollingButtons');
+    if (pollingBtns) pollingBtns.style.display = 'none';
 }
 
 function showResult(result) {
