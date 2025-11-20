@@ -6,7 +6,7 @@ const {
   MagicAuthError,
   MagicAuthErrorCode,
   UseCase
-} = require('glide-sdk');
+} = require('@glideidentity/glide-sdk');
 const dotenv = require('dotenv');
 
 // Load environment variables
@@ -24,7 +24,7 @@ const glide = new GlideClient({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:3030', 'http://127.0.0.1:3030', 'http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true
 }));
 app.use(express.json());
@@ -33,7 +33,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Serve the web-client-sdk from node_modules
-app.use('/sdk', express.static(path.join(__dirname, 'node_modules/glide-web-client-sdk/dist/browser')));
+app.use('/sdk', express.static(path.join(__dirname, 'node_modules/@glideidentity/web-client-sdk/dist/browser')));
 
 // Logging middleware for debugging
 app.use((req, res, next) => {
@@ -137,6 +137,38 @@ app.post('/api/phone-auth/process', async (req, res) => {
 });
 
 /**
+ * Status Proxy Endpoint
+ * Proxies status requests to avoid CORS issues
+ */
+app.get('/api/phone-auth/status/:sessionId', async (req, res) => {
+  try {
+    console.log(`[Status Proxy] Fetching status for session: ${req.params.sessionId}`);
+    const response = await fetch(
+      `https://api.glideidentity.app/public/public/status/${req.params.sessionId}`,
+      { 
+        headers: { 'Accept': 'application/json' }
+      }
+    );
+    
+    if (!response.ok) {
+      console.log(`[Status Proxy] Status check returned ${response.status}`);
+      const errorText = await response.text();
+      return res.status(response.status).send(errorText);
+    }
+    
+    const data = await response.json();
+    console.log(`[Status Proxy] Status response:`, data);
+    res.json(data);
+  } catch (error) {
+    console.error('[Status Proxy] Error:', error);
+    res.status(500).json({ 
+      error: 'Status check failed', 
+      message: error.message 
+    });
+  }
+});
+
+/**
  * Health Check Endpoint
  * Returns server status and configuration info
  */
@@ -163,6 +195,7 @@ app.listen(PORT, () => {
   console.log(`🔧 API endpoints:`);
   console.log(`   - POST /api/phone-auth/prepare`);
   console.log(`   - POST /api/phone-auth/process`);
+  console.log(`   - GET  /api/phone-auth/status/:sessionId`);
   console.log(`   - GET  /api/health`);
   console.log(`   - GET  /sdk/* (Web Client SDK)`);
   console.log('='.repeat(60));
