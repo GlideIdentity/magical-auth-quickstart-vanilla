@@ -453,12 +453,18 @@ async function executeStepTwo(isRetry = false) {
         addDebugLog('info', 'Step 2: Invoking secure browser prompt');
         addDebugLog('info', '[Granular] Step 2: About to invoke secure prompt with', stepOneResponse);
         
-        // Use extended mode for better control  
-        const invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, {
+        // Use extended mode for better control
+        // Merge SDK config options with required options
+        const invokeOptions = {
+            ...getSdkInvokeOptions(),
             executionMode: 'extended',
             preventDefaultUI: false,
             autoTrigger: !isRetry // Don't auto-trigger on retry
-        });
+        };
+        
+        addDebugLog('info', '[Granular] Step 2: Invoke options', invokeOptions);
+        
+        const invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, invokeOptions);
         
         addDebugLog('info', '[Granular] Step 2: Extended invoke result', invokeResult);
         
@@ -898,3 +904,152 @@ function formatPhoneNumber(phoneNumber) {
     
     return phoneNumber;
 }
+
+// ====================================================================
+// SDK Configuration Panel
+// ====================================================================
+
+// Default SDK configuration values
+const defaultSdkConfig = {
+    pollingInterval: 2000,
+    maxPollingAttempts: 30,
+    modalTheme: 'auto',
+    viewMode: 'toggle',
+    title: '',
+    description: '',
+    showCloseButton: true,
+    closeOnBackdrop: true,
+    closeOnEscape: true
+};
+
+// Current SDK configuration (loaded from localStorage or defaults)
+let sdkConfig = { ...defaultSdkConfig };
+
+// Initialize SDK Config
+function initSdkConfig() {
+    // Load saved config from localStorage
+    const savedConfig = localStorage.getItem('sdkConfig');
+    if (savedConfig) {
+        try {
+            sdkConfig = { ...defaultSdkConfig, ...JSON.parse(savedConfig) };
+        } catch (e) {
+            console.warn('Failed to parse saved SDK config, using defaults');
+            sdkConfig = { ...defaultSdkConfig };
+        }
+    }
+    
+    // Populate form fields with current config
+    populateConfigForm();
+    
+    // Setup config panel event listeners
+    setupConfigEventListeners();
+    
+    addDebugLog('info', 'SDK Configuration loaded', sdkConfig);
+}
+
+// Populate the config form with current values
+function populateConfigForm() {
+    document.getElementById('configPollingInterval').value = sdkConfig.pollingInterval;
+    document.getElementById('configMaxPollingAttempts').value = sdkConfig.maxPollingAttempts;
+    document.getElementById('configModalTheme').value = sdkConfig.modalTheme;
+    document.getElementById('configViewMode').value = sdkConfig.viewMode;
+    document.getElementById('configTitle').value = sdkConfig.title || '';
+    document.getElementById('configDescription').value = sdkConfig.description || '';
+    document.getElementById('configShowCloseButton').checked = sdkConfig.showCloseButton;
+    document.getElementById('configCloseOnBackdrop').checked = sdkConfig.closeOnBackdrop;
+    document.getElementById('configCloseOnEscape').checked = sdkConfig.closeOnEscape;
+}
+
+// Setup config panel event listeners
+function setupConfigEventListeners() {
+    const configBtn = document.getElementById('sdkConfigBtn');
+    const configPanel = document.getElementById('sdkConfigPanel');
+    const configOverlay = document.getElementById('sdkConfigOverlay');
+    const configClose = document.getElementById('sdkConfigClose');
+    const configReset = document.getElementById('sdkConfigReset');
+    const configApply = document.getElementById('sdkConfigApply');
+    
+    // Open panel
+    configBtn.addEventListener('click', () => {
+        configPanel.classList.add('open');
+        configOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    // Close panel functions
+    const closePanel = () => {
+        configPanel.classList.remove('open');
+        configOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    };
+    
+    configClose.addEventListener('click', closePanel);
+    configOverlay.addEventListener('click', closePanel);
+    
+    // Reset to defaults
+    configReset.addEventListener('click', () => {
+        sdkConfig = { ...defaultSdkConfig };
+        populateConfigForm();
+        addDebugLog('info', 'SDK Configuration reset to defaults');
+    });
+    
+    // Apply and close
+    configApply.addEventListener('click', () => {
+        // Read values from form
+        sdkConfig = {
+            pollingInterval: parseInt(document.getElementById('configPollingInterval').value, 10) || 2000,
+            maxPollingAttempts: parseInt(document.getElementById('configMaxPollingAttempts').value, 10) || 30,
+            modalTheme: document.getElementById('configModalTheme').value,
+            viewMode: document.getElementById('configViewMode').value,
+            title: document.getElementById('configTitle').value.trim(),
+            description: document.getElementById('configDescription').value.trim(),
+            showCloseButton: document.getElementById('configShowCloseButton').checked,
+            closeOnBackdrop: document.getElementById('configCloseOnBackdrop').checked,
+            closeOnEscape: document.getElementById('configCloseOnEscape').checked
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('sdkConfig', JSON.stringify(sdkConfig));
+        
+        addDebugLog('success', 'SDK Configuration applied', sdkConfig);
+        
+        closePanel();
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && configPanel.classList.contains('open')) {
+            closePanel();
+        }
+    });
+}
+
+// Get current SDK invoke options based on config
+function getSdkInvokeOptions() {
+    const options = {
+        pollingInterval: sdkConfig.pollingInterval,
+        maxPollingAttempts: sdkConfig.maxPollingAttempts,
+        modalOptions: {
+            theme: sdkConfig.modalTheme,
+            viewMode: sdkConfig.viewMode,
+            showCloseButton: sdkConfig.showCloseButton,
+            closeOnBackdrop: sdkConfig.closeOnBackdrop,
+            closeOnEscape: sdkConfig.closeOnEscape
+        }
+    };
+    
+    // Only add title if it's set
+    if (sdkConfig.title) {
+        options.modalOptions.title = sdkConfig.title;
+    }
+    
+    // Only add description if it's set
+    if (sdkConfig.description) {
+        options.modalOptions.description = sdkConfig.description;
+    }
+    
+    return options;
+}
+
+// Initialize config on page load
+document.addEventListener('DOMContentLoaded', initSdkConfig);

@@ -17,7 +17,139 @@
         </div>
         <h1>Magical Auth Quick Start</h1>
         <p>Test carrier-grade phone verification in minutes. No SMS, no delays, no fraud.</p>
+        
+        <!-- SDK Config Button -->
+        <button class="sdk-config-btn" id="sdkConfigBtn" title="SDK Configuration">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>SDK Config</span>
+        </button>
     </header>
+
+    <!-- SDK Configuration Panel -->
+    <div class="sdk-config-overlay" id="sdkConfigOverlay"></div>
+    <aside class="sdk-config-panel" id="sdkConfigPanel">
+        <div class="sdk-config-header">
+            <h2>SDK Configuration</h2>
+            <button class="sdk-config-close" id="sdkConfigClose">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="sdk-config-content">
+            <!-- Core Options -->
+            <div class="config-section">
+                <h3>Core Options</h3>
+                
+                <div class="config-field">
+                    <label for="configPollingInterval">Polling Interval (ms)</label>
+                    <p class="config-description">How often to check authentication status. Lower = faster updates, higher = less network traffic.</p>
+                    <input type="number" id="configPollingInterval" value="2000" min="500" max="10000" step="500">
+                </div>
+                
+                <div class="config-field">
+                    <label for="configMaxPollingAttempts">Max Polling Attempts</label>
+                    <p class="config-description">Maximum retries before timeout. With 2s interval: 30 attempts = 1 minute timeout.</p>
+                    <input type="number" id="configMaxPollingAttempts" value="30" min="5" max="120">
+                </div>
+            </div>
+            
+            <!-- Modal Options -->
+            <div class="config-section">
+                <h3>Modal Options</h3>
+                <p class="config-section-note">These options affect the QR code modal displayed during desktop authentication via the <code>invokeSecurePrompt</code> method (Granular mode Step 2).</p>
+                
+                <div class="config-field">
+                    <label for="configModalTheme">Modal Theme</label>
+                    <p class="config-description">Color theme for the QR code modal. 'Auto' uses system preference.</p>
+                    <select id="configModalTheme">
+                        <option value="auto">Auto (System Preference)</option>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                
+                <div class="config-field">
+                    <label for="configViewMode">View Mode</label>
+                    <p class="config-description">Layout style for the QR code modal</p>
+                    <select id="configViewMode">
+                        <option value="toggle">Toggle (iOS/Android switch)</option>
+                        <option value="dual">Dual (Both QR codes side by side)</option>
+                        <option value="pre-step">Pre-step (Choose OS first)</option>
+                    </select>
+                </div>
+                
+                <div class="config-field">
+                    <label for="configTitle">Title</label>
+                    <p class="config-description">Custom title text for the modal header</p>
+                    <input type="text" id="configTitle" placeholder="Scan to Verify">
+                </div>
+                
+                <div class="config-field">
+                    <label for="configDescription">Description</label>
+                    <p class="config-description">Optional subtitle text below the title</p>
+                    <input type="text" id="configDescription" placeholder="Optional description...">
+                </div>
+                
+                <div class="config-field config-toggle">
+                    <div class="config-toggle-info">
+                        <label for="configShowCloseButton">Show Close Button</label>
+                        <p class="config-description">Display the X button to close the modal</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="configShowCloseButton" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="config-field config-toggle">
+                    <div class="config-toggle-info">
+                        <label for="configCloseOnBackdrop">Close on Backdrop Click</label>
+                        <p class="config-description">Allow closing by clicking outside the modal</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="configCloseOnBackdrop" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="config-field config-toggle">
+                    <div class="config-toggle-info">
+                        <label for="configCloseOnEscape">Close on Escape Key</label>
+                        <p class="config-description">Allow closing by pressing the Escape key</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="configCloseOnEscape" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Developer Note -->
+            <div class="config-note">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <p>
+                    <strong>Developer Note:</strong> You can build your own custom UI by using 
+                    <code>preventDefaultUI: true</code> with <code>executionMode: 'extended'</code>. 
+                    This gives you full control over the QR code display and authentication flow.
+                </p>
+            </div>
+        </div>
+        
+        <div class="sdk-config-footer">
+            <button class="btn-secondary" id="sdkConfigReset">Reset to Defaults</button>
+            <button class="btn-primary" id="sdkConfigApply">Apply & Close</button>
+        </div>
+    </aside>
 
     <div class="container">
         <!-- Flow Mode Toggle -->
