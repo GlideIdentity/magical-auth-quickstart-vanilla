@@ -404,6 +404,16 @@ button {
     font-size: 14px;
 }
 
+/* Code styling in step descriptions */
+.step-card code {
+    background: rgba(0, 113, 227, 0.1);
+    color: #0071e3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 13px;
+}
+
 .step-button {
     padding: 10px 20px;
     background: rgba(17, 24, 39, 0.9);

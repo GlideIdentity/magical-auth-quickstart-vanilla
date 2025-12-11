@@ -132,14 +132,12 @@
             
             <!-- Developer Note -->
             <div class="config-note">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
                 </svg>
                 <p>
                     <strong>Developer Note:</strong> You can build your own custom UI by using 
-                    <code>preventDefaultUI: true</code> with <code>executionMode: 'extended'</code>. 
+                    <code>preventDefaultUI: true</code> in the invoke options. 
                     This gives you full control over the QR code display and authentication flow.
                 </p>
             </div>
@@ -298,7 +296,7 @@
                     <span class="step-number">1</span>
                     <h4>Prepare Authentication</h4>
                 </div>
-                <p>Initialize the authentication session with the server</p>
+                <p>Initialize the session using <code>prepare()</code></p>
                 
                 <button class="step-button" id="step1Button">
                     Execute Step
@@ -314,7 +312,7 @@
                     <span class="step-number">2</span>
                     <h4>Browser Verification</h4>
                 </div>
-                <p>Invoke secure browser prompt for carrier verification</p>
+                <p>Invoke secure prompt using <code>invokeSecurePrompt()</code></p>
                 
                 <div id="step2Actions">
                     <button class="step-button" id="step2Button" disabled>
@@ -342,7 +340,7 @@
                     <span class="step-number">3</span>
                     <h4>Process Verification</h4>
                 </div>
-                <p>Send credential to server for final verification</p>
+                <p>Process using <code id="step3FunctionName">verifyPhoneNumber()</code></p>
                 
                 <button class="step-button" id="step3Button" disabled>
                     Execute Step

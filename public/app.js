@@ -26,34 +26,34 @@ let debugLogs = [];
 let stepOneResponse = null;
 let stepTwoResponse = null;
 let stepThreeResponse = null;
-let extendedResponse = null;
+let invokeResult = null;
 let isPolling = false;
 
 // API endpoint configuration
 const API_BASE_URL = window.location.origin; // Uses the same origin as the frontend
 const API_ENDPOINTS = {
-    prepare: `${API_BASE_URL}/api/phone-auth/prepare`,
-    process: `${API_BASE_URL}/api/phone-auth/process`,
-    status: `${API_BASE_URL}/api/phone-auth/status`,
-    health: `${API_BASE_URL}/api/health`
+    prepare: '/api/phone-auth/prepare',
+    process: '/api/phone-auth/process',
+    status: '/api/phone-auth/status',
+    health: '/api/health'
 };
 
 // Get UseCase constants from the SDK (set after SDK loads)
-let UseCase = null;
+let USE_CASE = null;
 
 // ====================================================================
 // Initialize Application
 // ====================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Magical Auth Quick Start - Vanilla JS');
+    console.log('🚀 Magical Auth Quick Start - Vanilla JS (SDK v6)');
     
     // Initialize PhoneAuthClient and get constants from the global GlideWebClientSDK
     if (window.GlideWebClientSDK && window.GlideWebClientSDK.PhoneAuthClient) {
         // Get constants from SDK
-        UseCase = window.GlideWebClientSDK.UseCase;
+        USE_CASE = window.GlideWebClientSDK.USE_CASE;
         
-        // Initialize the auth client
+        // Initialize the auth client (v6 - callbacks removed)
         authClient = new window.GlideWebClientSDK.PhoneAuthClient({
             endpoints: {
                 prepare: API_ENDPOINTS.prepare,
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    Uncomment the line below to enable polling through your backend server.
                    If not provided, the SDK will call the Glide Magic Auth server directly.
                    Useful for development and production when you want to proxy requests. */
-                // polling: API_ENDPOINTS.status,
+                polling: API_ENDPOINTS.status,
             },
             debug: true, // Enable SDK debug logging to console for development purposes
             /* Mobile DevTools Console
@@ -73,17 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
             //   showMobileConsole: true
             // },
             timeout: 30000,
-            onCrossDeviceDetected: () => {
-                addDebugLog('info', 'Cross-device authentication detected (QR code shown)');
-            },
-            onRetryAttempt: (attempt, maxAttempts) => {
-                addDebugLog('info', `Retry attempt ${attempt} of ${maxAttempts}`);
-            }
         });
         
-        addDebugLog('info', 'PhoneAuthClient initialized', { 
+        addDebugLog('info', 'PhoneAuthClient initialized (v6)', { 
             endpoints: API_ENDPOINTS,
-            useCase: UseCase 
+            USE_CASE: USE_CASE 
         });
     } else {
         console.error('❌ GlideWebClientSDK not found! Make sure the SDK is loaded.');
@@ -160,15 +154,15 @@ function setupEventListeners() {
     
     // Step 2 polling buttons
     document.getElementById('step2RetryButton').addEventListener('click', () => {
-        if (extendedResponse && extendedResponse.trigger) {
-            addDebugLog('info', '[Granular] Retrying Link trigger');
-            extendedResponse.trigger();
-        }
+        // For Link strategy, just call invokeSecurePrompt again
+        addDebugLog('info', '[Granular] Retrying Step 2');
+        executeStepTwo(true);
     });
     
     document.getElementById('step2CancelButton').addEventListener('click', () => {
-        if (extendedResponse && extendedResponse.stop_polling) {
-            extendedResponse.stop_polling();
+        // Cancel polling if available
+        if (invokeResult && invokeResult.cancel) {
+            invokeResult.cancel();
         }
         isPolling = false;
         
@@ -267,6 +261,12 @@ function selectFlow(flowType) {
     const buttonText = flowType === 'verify' ? 'Verify Phone Number' : 'Get Phone Number';
     document.getElementById('buttonText').textContent = buttonText;
     
+    // Update step 3 function name
+    const step3FunctionName = document.getElementById('step3FunctionName');
+    if (step3FunctionName) {
+        step3FunctionName.textContent = flowType === 'get' ? 'getPhoneNumber()' : 'verifyPhoneNumber()';
+    }
+    
     // Clear previous results
     clearResults();
     
@@ -328,23 +328,20 @@ async function startHighLevelAuth() {
             phone: selectedFlowType === 'verify' ? phoneInput : undefined
         });
         
+        // v6 API: use authenticate() with proper use_case
         const options = {
-            use_case: selectedFlowType === 'get' ? UseCase.GET_PHONE_NUMBER : UseCase.VERIFY_PHONE_NUMBER,
+            use_case: selectedFlowType === 'get' ? USE_CASE.GET_PHONE_NUMBER : USE_CASE.VERIFY_PHONE_NUMBER,
             phone_number: selectedFlowType === 'verify' ? phoneInput : undefined,
-            plmn: selectedFlowType === 'get' ? { mcc: '310', mnc: '260' } : undefined, // T-Mobile USA for GetPhoneNumber
-            consent_data: {
-                consent_text: 'I agree to verify my phone number',
-                policy_link: 'https://example.com/privacy',
-                policy_text: 'Privacy Policy'
-            }
+            // Note: plmn is deprecated in v6, server determines carrier from phone or network
         };
         
-        let response;
-        if (selectedFlowType === 'get') {
-            response = await authClient.getPhoneNumberComplete(options);
-        } else {
-            response = await authClient.verifyPhoneNumberComplete(phoneInput, options);
-        }
+        // Get modal options from config
+        const sdkOptions = getSdkInvokeOptions();
+        
+        addDebugLog('info', 'Calling authenticate()', { options, sdkOptions });
+        
+        // v6: Use authenticate() for high-level flow
+        const response = await authClient.authenticate(options, sdkOptions);
         
         showResult(response);
         addDebugLog('success', 'Authentication successful', response);
@@ -391,20 +388,17 @@ async function executeStepOne() {
     try {
         addDebugLog('info', 'Step 1: Preparing authentication');
         
+        // v6 API: use prepare() instead of preparePhoneRequest()
         const options = {
-            use_case: selectedFlowType === 'get' ? UseCase.GET_PHONE_NUMBER : UseCase.VERIFY_PHONE_NUMBER,
+            use_case: selectedFlowType === 'get' ? USE_CASE.GET_PHONE_NUMBER : USE_CASE.VERIFY_PHONE_NUMBER,
             phone_number: selectedFlowType === 'verify' ? phoneInput : undefined,
-            plmn: selectedFlowType === 'get' ? { mcc: '310', mnc: '260' } : undefined, // T-Mobile USA
-            consent_data: {
-                consent_text: 'I agree to verify my phone number',
-                policy_link: 'https://example.com/privacy',
-                policy_text: 'Privacy Policy'
-            }
+            // Note: plmn is deprecated in v6
         };
         
         addDebugLog('info', '[Granular] Step 1: Preparing with options', options);
         
-        stepOneResponse = await authClient.preparePhoneRequest(options);
+        // v6: Use prepare() instead of preparePhoneRequest()
+        stepOneResponse = await authClient.prepare(options);
         
         addDebugLog('info', '[Granular] Step 1: Prepare response', stepOneResponse);
         
@@ -426,16 +420,11 @@ async function executeStepTwo(isRetry = false) {
     
     // Clear error state if retrying
     if (isRetry) {
-        // Clean up existing extended response before creating a new one
-        if (extendedResponse) {
-            if (extendedResponse.cancel) {
-                extendedResponse.cancel();
+        // Clean up existing invoke result before creating a new one
+        if (invokeResult && invokeResult.cancel) {
+            invokeResult.cancel();
             }
-            if (extendedResponse.stop_polling) {
-                extendedResponse.stop_polling();
-            }
-            extendedResponse = null;
-        }
+        invokeResult = null;
         
         const errorDiv = document.getElementById('step2Error');
         if (errorDiv) errorDiv.classList.add('hidden');
@@ -453,45 +442,43 @@ async function executeStepTwo(isRetry = false) {
         addDebugLog('info', 'Step 2: Invoking secure browser prompt');
         addDebugLog('info', '[Granular] Step 2: About to invoke secure prompt with', stepOneResponse);
         
-        // Use extended mode for better control
-        // Merge SDK config options with required options
-        const invokeOptions = {
-            ...getSdkInvokeOptions(),
-            executionMode: 'extended',
-            preventDefaultUI: false,
-            autoTrigger: !isRetry // Don't auto-trigger on retry
-        };
+        // v6 API: invokeSecurePrompt returns InvokeResult directly (no executionMode)
+        const sdkOptions = getSdkInvokeOptions();
         
-        addDebugLog('info', '[Granular] Step 2: Invoke options', invokeOptions);
+        addDebugLog('info', '[Granular] Step 2: Invoke options', sdkOptions);
         
-        const invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, invokeOptions);
+        // v6: invokeSecurePrompt returns InvokeResult with { credential: Promise, strategy, session, cancel? }
+        invokeResult = await authClient.invokeSecurePrompt(stepOneResponse, sdkOptions);
         
-        addDebugLog('info', '[Granular] Step 2: Extended invoke result', invokeResult);
+        addDebugLog('info', '[Granular] Step 2: Invoke result', {
+            strategy: invokeResult.strategy,
+            hasCancel: !!invokeResult.cancel,
+            session: invokeResult.session
+        });
         
         let credential;
+        
+        // For Link/Desktop strategies, show polling UI
         if (invokeResult.strategy === 'link' || invokeResult.strategy === 'desktop') {
-            // Store extended response for potential retry
-            extendedResponse = invokeResult;
             isPolling = true;
             updateStep2UIForPolling();
             
-            // For Link strategy, trigger if it's a retry
-            if (isRetry && invokeResult.trigger) {
-                addDebugLog('info', '[Granular] Step 2: Triggering retry for Link strategy');
-                invokeResult.trigger();
-            }
-            
-            // Wait for credential - SDK handles timeout
+            // Wait for credential - SDK handles polling and timeout
+            addDebugLog('info', '[Granular] Step 2: Waiting for credential...');
             const authCredential = await invokeResult.credential;
-            // Link and Desktop return AuthCredential object, extract the credential string
+            
+            // v6: credential is in authCredential.credential
             credential = authCredential.credential || authCredential;
             isPolling = false;
         } else if (invokeResult.strategy === 'ts43') {
-            // TS43 returns credential directly
-            credential = invokeResult.credential || invokeResult;
+            // TS43 blocks until user completes, then resolves
+            addDebugLog('info', '[Granular] Step 2: Waiting for TS43 credential...');
+            const authCredential = await invokeResult.credential;
+            credential = authCredential.credential || authCredential;
         } else {
             // Unknown strategy - handle as generic
-            credential = invokeResult.credential || invokeResult;
+            const authCredential = await invokeResult.credential;
+            credential = authCredential.credential || authCredential;
         }
         
         stepTwoResponse = credential;
@@ -502,10 +489,8 @@ async function executeStepTwo(isRetry = false) {
         updateStep2UIForNormal();
         
         addDebugLog('success', 'Step 2 completed', credential);
-        // Clean up extended response
-        if (extendedResponse) {
-            extendedResponse = null;
-        }
+        // Clean up invoke result
+        invokeResult = null;
     } catch (error) {
         addDebugLog('error', '[Granular] Step 2 Error', error);
         const errorMessage = error.message || 'Browser verification failed';
@@ -513,8 +498,8 @@ async function executeStepTwo(isRetry = false) {
         addDebugLog('error', 'Step 2 failed', error);
         isPolling = false;
         
-        // Show retry option for Desktop/Link strategies
-        const shouldShowRetry = extendedResponse || 
+        // Show retry option for errors
+        const shouldShowRetry = invokeResult || 
             errorMessage.toLowerCase().includes('cancel') || 
             errorMessage.toLowerCase().includes('closed');
             
@@ -539,7 +524,6 @@ async function executeStepTwo(isRetry = false) {
             }
         } else {
             // For non-retryable errors, just show the error UI
-            // Don't call setStepLoading as it would incorrectly show "Completed"
             updateStep2UIForError();
         }
     } finally {
@@ -558,10 +542,18 @@ async function executeStepThree() {
         addDebugLog('info', '[Granular] Step 3: Using session', stepOneResponse.session);
         
         let response;
+        
+        // v6: Use getPhoneNumber or verifyPhoneNumber with AuthCredential
+        const authCredential = {
+            credential: stepTwoResponse,
+            session: stepOneResponse.session,
+            authenticated: true
+        };
+        
         if (selectedFlowType === 'get') {
-            response = await authClient.getPhoneNumber(stepTwoResponse, stepOneResponse.session);
+            response = await authClient.getPhoneNumber(authCredential, stepOneResponse.session);
         } else {
-            response = await authClient.verifyPhoneNumber(stepTwoResponse, stepOneResponse.session);
+            response = await authClient.verifyPhoneNumber(authCredential, stepOneResponse.session);
         }
         
         addDebugLog('info', '[Granular] Step 3: Final response', response);
@@ -589,14 +581,11 @@ function resetGranularFlow() {
     stepTwoResponse = null;
     stepThreeResponse = null;
     
-    // Clean up extended response if exists
-    if (extendedResponse && extendedResponse.cancel) {
-        extendedResponse.cancel();
+    // Clean up invoke result if exists
+    if (invokeResult && invokeResult.cancel) {
+        invokeResult.cancel();
     }
-    if (extendedResponse && extendedResponse.stop_polling) {
-        extendedResponse.stop_polling();
-    }
-    extendedResponse = null;
+    invokeResult = null;
     isPolling = false;
     
     // Reset UI
@@ -1033,7 +1022,7 @@ function getSdkInvokeOptions() {
             theme: sdkConfig.modalTheme,
             viewMode: sdkConfig.viewMode,
             showCloseButton: sdkConfig.showCloseButton,
-            closeOnBackdrop: sdkConfig.closeOnBackdrop,
+            closeOnBackdropClick: sdkConfig.closeOnBackdrop,
             closeOnEscape: sdkConfig.closeOnEscape
         }
     };

@@ -144,7 +144,7 @@ app.get('/api/phone-auth/status/:sessionId', async (req, res) => {
   try {
     console.log(`[Status Proxy] Fetching status for session: ${req.params.sessionId}`);
     const response = await fetch(
-      `https://api.glideidentity.app/public/public/status/${req.params.sessionId}`,
+      `https://api-dev.glideidentity.app/public/status/${req.params.sessionId}`,
       { 
         headers: { 'Accept': 'application/json' }
       }
