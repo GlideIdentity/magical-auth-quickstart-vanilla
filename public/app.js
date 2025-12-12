@@ -58,10 +58,24 @@ document.addEventListener('DOMContentLoaded', function() {
             endpoints: {
                 prepare: API_ENDPOINTS.prepare,
                 process: API_ENDPOINTS.process,
-                /* Polling Endpoint Configuration
-                   Uncomment the line below to enable polling through your backend server.
-                   If not provided, the SDK will call the Glide Magic Auth server directly.
-                   Useful for development and production when you want to proxy requests. */
+                /**
+                 * Polling Endpoint Configuration
+                 * 
+                 * This endpoint is used for desktop/QR authentication to poll for
+                 * completion status while the user authenticates on their mobile device.
+                 * 
+                 * OPTIONS:
+                 * 1. USE PROXY (current): API_ENDPOINTS.status ('/api/phone-auth/status')
+                 *    - Routes through your backend server
+                 *    - Better for debugging (see requests in server logs)
+                 *    - Avoids CORS issues
+                 *    - Respects GLIDE_API_BASE_URL for environment switching
+                 * 
+                 * 2. DIRECT CALLS: Comment out or remove this line
+                 *    - SDK will use status_url from prepare response OR
+                 *    - Fall back to: https://api.glideidentity.app/public/status/
+                 *    - May have CORS issues in some environments
+                 */
                 polling: API_ENDPOINTS.status,
             },
             debug: true, // Enable SDK debug logging to console for development purposes
