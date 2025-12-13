@@ -42,11 +42,12 @@ npm start
 ```
 magical-auth-quickstart-vanilla/
 ├── public/
-│   ├── index.html         # Main HTML page
-│   ├── app.js            # Vanilla JS app (both modes)
-│   └── styles.css        # Styling
-├── server.js             # Express backend + static file serving
-└── package.json          # Dependencies (both SDKs)
+│   ├── index.html           # Main HTML page
+│   ├── app.js               # Vanilla JS app (both modes)
+│   ├── sdk-config-panel.js  # SDK configuration panel
+│   └── styles.css           # Styling
+├── server.js                # Express backend + static file serving
+└── package.json             # Dependencies (both SDKs)
 ```
 
 **Key Difference**: Single Express server serves both the frontend AND backend API. No build step needed!
@@ -55,7 +56,7 @@ magical-auth-quickstart-vanilla/
 
 The quickstart works out-of-the-box with our demo server. To use your own credentials:
 
-1. Get your API key from [Glide Dashboard](https://docs.glideapi.com/)
+1. Get your API key from [Glide Dashboard](https://docs.glideidentity.com/)
 2. Create `.env` file:
 ```env
 GLIDE_API_KEY=your_api_key_here
@@ -128,7 +129,7 @@ Now that you've seen it work:
 
 ## 📚 Resources
 
-- **[SDK Documentation](https://docs.glideapi.com/)** - Full SDK reference and API docs
+- **[SDK Documentation](https://docs.glideidentity.com/)** - Full SDK reference and API docs
 
 ## 📦 SDK Loading Options
 
@@ -155,7 +156,8 @@ The quickstart supports multiple ways to load the SDK:
 - **No framework overhead** - Pure JavaScript
 - **Easy to understand** - Simple file structure
 - **Easy to integrate** - Copy patterns into any project
-- **Both SDKs from npm** - Production-ready setup
+- **Web SDK** - Uses `PhoneAuthClient` from `@glideidentity/web-client-sdk`
+- **Node SDK** - Backend uses `@glideidentity/glide-sdk`
 
 ## 💬 Need Help?
 

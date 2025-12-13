@@ -911,147 +911,29 @@ function formatPhoneNumber(phoneNumber) {
 // ====================================================================
 // SDK Configuration Panel
 // ====================================================================
+// Note: SDK Configuration logic is now in sdk-config-panel.js
+// This keeps the main app.js focused on the authentication flow.
+// The sdkConfig variable is managed by the SdkConfigPanel module.
+// ====================================================================
 
-// Default SDK configuration values
-const defaultSdkConfig = {
-    pollingInterval: 2000,
-    maxPollingAttempts: 30,
-    modalTheme: 'auto',
-    viewMode: 'toggle',
-    title: '',
-    description: '',
-    showCloseButton: true,
-    closeOnBackdrop: true,
-    closeOnEscape: true
-};
-
-// Current SDK configuration (loaded from localStorage or defaults)
-let sdkConfig = { ...defaultSdkConfig };
-
-// Initialize SDK Config
+// Initialize SDK Config using the separate module
 function initSdkConfig() {
-    // Load saved config from localStorage
-    const savedConfig = localStorage.getItem('sdkConfig');
-    if (savedConfig) {
-        try {
-            sdkConfig = { ...defaultSdkConfig, ...JSON.parse(savedConfig) };
-        } catch (e) {
-            console.warn('Failed to parse saved SDK config, using defaults');
-            sdkConfig = { ...defaultSdkConfig };
-        }
-    }
+    // Initialize config from the SdkConfigPanel module
+    window.SdkConfigPanel.init();
     
     // Populate form fields with current config
-    populateConfigForm();
+    window.SdkConfigPanel.populateForm();
     
     // Setup config panel event listeners
-    setupConfigEventListeners();
+    window.SdkConfigPanel.setup(null, addDebugLog);
     
-    addDebugLog('info', 'SDK Configuration loaded', sdkConfig);
-}
-
-// Populate the config form with current values
-function populateConfigForm() {
-    document.getElementById('configPollingInterval').value = sdkConfig.pollingInterval;
-    document.getElementById('configMaxPollingAttempts').value = sdkConfig.maxPollingAttempts;
-    document.getElementById('configModalTheme').value = sdkConfig.modalTheme;
-    document.getElementById('configViewMode').value = sdkConfig.viewMode;
-    document.getElementById('configTitle').value = sdkConfig.title || '';
-    document.getElementById('configDescription').value = sdkConfig.description || '';
-    document.getElementById('configShowCloseButton').checked = sdkConfig.showCloseButton;
-    document.getElementById('configCloseOnBackdrop').checked = sdkConfig.closeOnBackdrop;
-    document.getElementById('configCloseOnEscape').checked = sdkConfig.closeOnEscape;
-}
-
-// Setup config panel event listeners
-function setupConfigEventListeners() {
-    const configBtn = document.getElementById('sdkConfigBtn');
-    const configPanel = document.getElementById('sdkConfigPanel');
-    const configOverlay = document.getElementById('sdkConfigOverlay');
-    const configClose = document.getElementById('sdkConfigClose');
-    const configReset = document.getElementById('sdkConfigReset');
-    const configApply = document.getElementById('sdkConfigApply');
-    
-    // Open panel
-    configBtn.addEventListener('click', () => {
-        configPanel.classList.add('open');
-        configOverlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    });
-    
-    // Close panel functions
-    const closePanel = () => {
-        configPanel.classList.remove('open');
-        configOverlay.classList.remove('open');
-        document.body.style.overflow = '';
-    };
-    
-    configClose.addEventListener('click', closePanel);
-    configOverlay.addEventListener('click', closePanel);
-    
-    // Reset to defaults
-    configReset.addEventListener('click', () => {
-        sdkConfig = { ...defaultSdkConfig };
-        populateConfigForm();
-        addDebugLog('info', 'SDK Configuration reset to defaults');
-    });
-    
-    // Apply and close
-    configApply.addEventListener('click', () => {
-        // Read values from form
-        sdkConfig = {
-            pollingInterval: parseInt(document.getElementById('configPollingInterval').value, 10) || 2000,
-            maxPollingAttempts: parseInt(document.getElementById('configMaxPollingAttempts').value, 10) || 30,
-            modalTheme: document.getElementById('configModalTheme').value,
-            viewMode: document.getElementById('configViewMode').value,
-            title: document.getElementById('configTitle').value.trim(),
-            description: document.getElementById('configDescription').value.trim(),
-            showCloseButton: document.getElementById('configShowCloseButton').checked,
-            closeOnBackdrop: document.getElementById('configCloseOnBackdrop').checked,
-            closeOnEscape: document.getElementById('configCloseOnEscape').checked
-        };
-        
-        // Save to localStorage
-        localStorage.setItem('sdkConfig', JSON.stringify(sdkConfig));
-        
-        addDebugLog('success', 'SDK Configuration applied', sdkConfig);
-        
-        closePanel();
-    });
-    
-    // Close on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && configPanel.classList.contains('open')) {
-            closePanel();
-        }
-    });
+    addDebugLog('info', 'SDK Configuration loaded', window.SdkConfigPanel.getConfig());
 }
 
 // Get current SDK invoke options based on config
+// Delegates to the SdkConfigPanel module
 function getSdkInvokeOptions() {
-    const options = {
-        pollingInterval: sdkConfig.pollingInterval,
-        maxPollingAttempts: sdkConfig.maxPollingAttempts,
-        modalOptions: {
-            theme: sdkConfig.modalTheme,
-            viewMode: sdkConfig.viewMode,
-            showCloseButton: sdkConfig.showCloseButton,
-            closeOnBackdropClick: sdkConfig.closeOnBackdrop,
-            closeOnEscape: sdkConfig.closeOnEscape
-        }
-    };
-    
-    // Only add title if it's set
-    if (sdkConfig.title) {
-        options.modalOptions.title = sdkConfig.title;
-    }
-    
-    // Only add description if it's set
-    if (sdkConfig.description) {
-        options.modalOptions.description = sdkConfig.description;
-    }
-    
-    return options;
+    return window.SdkConfigPanel.getInvokeOptions();
 }
 
 // Initialize config on page load
