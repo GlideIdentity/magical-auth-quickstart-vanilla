@@ -27,7 +27,6 @@ let stepOneResponse = null;
 let stepTwoResponse = null;
 let stepThreeResponse = null;
 let invokeResult = null;
-let isPolling = false;
 
 // API endpoint configuration
 const API_BASE_URL = window.location.origin; // Uses the same origin as the frontend
@@ -178,7 +177,6 @@ function setupEventListeners() {
         if (invokeResult && invokeResult.cancel) {
             invokeResult.cancel();
         }
-        isPolling = false;
         
         // Hide polling buttons first
         const pollingBtns = document.getElementById('step2PollingButtons');
@@ -342,7 +340,6 @@ async function startHighLevelAuth() {
             phone: selectedFlowType === 'verify' ? phoneInput : undefined
         });
         
-        // v6 API: use authenticate() with proper use_case
         const options = {
             use_case: selectedFlowType === 'get' ? USE_CASE.GET_PHONE_NUMBER : USE_CASE.VERIFY_PHONE_NUMBER,
             phone_number: selectedFlowType === 'verify' ? phoneInput : undefined,
@@ -354,7 +351,6 @@ async function startHighLevelAuth() {
         
         addDebugLog('info', 'Calling authenticate()', { options, sdkOptions });
         
-        // v6: Use authenticate() for high-level flow
         const response = await authClient.authenticate(options, sdkOptions);
         
         showResult(response);
@@ -470,30 +466,14 @@ async function executeStepTwo(isRetry = false) {
             session: invokeResult.session
         });
         
-        let credential;
-        
-        // For Link/Desktop strategies, show polling UI
-        if (invokeResult.strategy === 'link' || invokeResult.strategy === 'desktop') {
-            isPolling = true;
+        // For Link/Desktop strategies, show polling UI while waiting
+        const needsPollingUI = invokeResult.strategy === 'link' || invokeResult.strategy === 'desktop';
+        if (needsPollingUI) {
             updateStep2UIForPolling();
-            
-            // Wait for credential - SDK handles polling and timeout
-            addDebugLog('info', '[Granular] Step 2: Waiting for credential...');
-            const authCredential = await invokeResult.credential;
-            
-            // v6: credential is in authCredential.credential
-            credential = authCredential.credential || authCredential;
-            isPolling = false;
-        } else if (invokeResult.strategy === 'ts43') {
-            // TS43 blocks until user completes, then resolves
-            addDebugLog('info', '[Granular] Step 2: Waiting for TS43 credential...');
-            const authCredential = await invokeResult.credential;
-            credential = authCredential.credential || authCredential;
-        } else {
-            // Unknown strategy - handle as generic
-            const authCredential = await invokeResult.credential;
-            credential = authCredential.credential || authCredential;
         }
+        
+        addDebugLog('info', `[Granular] Step 2: Waiting for ${invokeResult.strategy} credential...`);
+        const credential = await invokeResult.credential;
         
         stepTwoResponse = credential;
         addDebugLog('info', '[Granular] Step 2: Received credential', credential);
@@ -510,7 +490,6 @@ async function executeStepTwo(isRetry = false) {
         const errorMessage = error.message || 'Browser verification failed';
         showStepError(2, errorMessage);
         addDebugLog('error', 'Step 2 failed', error);
-        isPolling = false;
         
         // Show retry option for errors
         const shouldShowRetry = invokeResult || 
@@ -540,8 +519,6 @@ async function executeStepTwo(isRetry = false) {
             // For non-retryable errors, just show the error UI
             updateStep2UIForError();
         }
-    } finally {
-        isPolling = false;
     }
 }
 
@@ -557,17 +534,10 @@ async function executeStepThree() {
         
         let response;
         
-        // v6: Use getPhoneNumber or verifyPhoneNumber with AuthCredential
-        const authCredential = {
-            credential: stepTwoResponse,
-            session: stepOneResponse.session,
-            authenticated: true
-        };
-        
         if (selectedFlowType === 'get') {
-            response = await authClient.getPhoneNumber(authCredential, stepOneResponse.session);
+            response = await authClient.getPhoneNumber(stepTwoResponse, stepOneResponse.session);
         } else {
-            response = await authClient.verifyPhoneNumber(authCredential, stepOneResponse.session);
+            response = await authClient.verifyPhoneNumber(stepTwoResponse, stepOneResponse.session);
         }
         
         addDebugLog('info', '[Granular] Step 3: Final response', response);
@@ -600,7 +570,6 @@ function resetGranularFlow() {
         invokeResult.cancel();
     }
     invokeResult = null;
-    isPolling = false;
     
     // Reset UI
     for (let i = 1; i <= 3; i++) {
