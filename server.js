@@ -220,7 +220,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('='.repeat(60));
   console.log('🚀 Magical Auth Quickstart - Vanilla JavaScript');
   console.log('='.repeat(60));
@@ -246,13 +246,19 @@ app.listen(PORT, () => {
   console.log('='.repeat(60));
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
-});
+// Graceful shutdown - properly close server to free port
+function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    console.log('✅ Server closed. Port freed.');
+    process.exit(0);
+  });
+  // Force close after 3 seconds if server doesn't close
+  setTimeout(() => {
+    console.log('⚠️  Forcing shutdown...');
+    process.exit(0);
+  }, 3000);
+}
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT received. Shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

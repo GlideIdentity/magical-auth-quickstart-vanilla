@@ -543,7 +543,10 @@ async function executeStepThree() {
         addDebugLog('info', '[Granular] Step 3: Final response', response);
         
         stepThreeResponse = response;
-        showStepSuccess(3, `Verification complete! Phone: ${response.phone_number} - Verified: ${response.verified ? 'Yes' : 'No'}`);
+        const stepThreeMessage = selectedFlowType === 'verify' 
+            ? `Verification complete! Phone: ${response.phone_number} - Verified: ${response.verified ? 'Yes' : 'No'}`
+            : `Phone retrieved: ${response.phone_number}`;
+        showStepSuccess(3, stepThreeMessage);
         showGranularResult(response);
         
         // Show reset button
@@ -740,9 +743,14 @@ function showResult(result) {
     const resultDiv = document.getElementById('resultSuccess');
     const detailsDiv = document.getElementById('resultDetails');
     
+    // Only show verified status for verify flow
+    const verifiedLine = selectedFlowType === 'verify' 
+        ? `<p><strong>Verified:</strong> ${result.verified ? 'Yes' : 'No'}</p>`
+        : '';
+    
     detailsDiv.innerHTML = `
         <p><strong>Phone Number:</strong> ${result.phone_number || 'N/A'}</p>
-        <p><strong>Verified:</strong> ${result.verified !== undefined ? (result.verified ? 'Yes' : 'No') : 'Yes'}</p>
+        ${verifiedLine}
         ${result.aud ? `<p><strong>Audience:</strong> ${result.aud}</p>` : ''}
     `;
     
@@ -753,9 +761,14 @@ function showGranularResult(result) {
     const resultDiv = document.getElementById('granularResult');
     const detailsDiv = document.getElementById('granularResultDetails');
     
+    // Only show verified status for verify flow
+    const verifiedLine = selectedFlowType === 'verify' 
+        ? `<p><strong>Verified:</strong> ${result.verified ? 'Yes' : 'No'}</p>`
+        : '';
+    
     detailsDiv.innerHTML = `
         <p><strong>Phone Number:</strong> ${result.phone_number || 'N/A'}</p>
-        <p><strong>Verified:</strong> ${result.verified !== undefined ? (result.verified ? 'Yes' : 'No') : 'Yes'}</p>
+        ${verifiedLine}
         ${result.aud ? `<p><strong>Audience:</strong> ${result.aud}</p>` : ''}
     `;
     

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@glideidentity/glide-sdk": "^5.4.0",
-    "@glideidentity/web-client-sdk": "^6.0.0-beta.2",
+    "@glideidentity/web-client-sdk": "^6.0.0-beta.4",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2"
