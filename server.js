@@ -20,7 +20,6 @@ const glide = new GlideClient({
   apiKey: process.env.GLIDE_API_KEY,
   debug: process.env.GLIDE_DEBUG === 'true',
   logFormat: process.env.GLIDE_LOG_FORMAT || 'pretty', // Use pretty format for nice boxed logs
-  // Developer environment - adds 'developer' header to requests
   ...(process.env.GLIDE_DEV_ENV && { devEnv: process.env.GLIDE_DEV_ENV })
 });
 
