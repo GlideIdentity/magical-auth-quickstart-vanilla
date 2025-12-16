@@ -9,11 +9,11 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@glideidentity/glide-sdk": "^5.4.0",
+    "@glideidentity/web-client-sdk": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "@glideidentity/glide-sdk": "^5.2.0",
-    "@glideidentity/web-client-sdk": "^4.4.10"
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

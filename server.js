@@ -19,7 +19,8 @@ const PORT = process.env.PORT || 3000;
 const glide = new GlideClient({
   apiKey: process.env.GLIDE_API_KEY,
   debug: process.env.GLIDE_DEBUG === 'true',
-  logFormat: process.env.GLIDE_LOG_FORMAT || 'pretty' // Use pretty format for nice boxed logs
+  logFormat: process.env.GLIDE_LOG_FORMAT || 'pretty', // Use pretty format for nice boxed logs
+  ...(process.env.GLIDE_DEV_ENV && { devEnv: process.env.GLIDE_DEV_ENV })
 });
 
 // Middleware
@@ -137,16 +138,47 @@ app.post('/api/phone-auth/process', async (req, res) => {
 });
 
 /**
- * Status Proxy Endpoint
- * Proxies status requests to avoid CORS issues
+ * Status Proxy Endpoint for Desktop/QR Authentication Polling
+ * 
+ * PURPOSE:
+ * This endpoint proxies status polling requests to the Magic Auth server.
+ * It's used during desktop QR code authentication to check if the user
+ * has completed authentication on their mobile device.
+ * 
+ * WHY USE A PROXY:
+ * 1. CORS Avoidance: Browser security blocks direct cross-origin requests
+ *    to Magic Auth servers. This proxy runs on the same origin as your app.
+ * 2. Developer Debugging: Requests appear in your server logs, making it
+ *    easier to debug authentication flows during development.
+ * 3. Environment Flexibility: Easily switch between prod/staging/dev
+ *    environments using GLIDE_API_BASE_URL env variable.
+ * 
+ * ALTERNATIVE - DIRECT CALLS:
+ * You can skip this proxy by NOT configuring 'polling' in the SDK:
+ * 
+ *   // In your frontend SDK config (app.js), remove or comment out:
+ *   // polling: API_ENDPOINTS.status,
+ *   
+ * When 'polling' is not set, the SDK will:
+ * 1. First try using the status_url from the prepare response
+ * 2. Fall back to calling Magic Auth's public endpoint directly:
+ *    https://api.glideidentity.app/public/status/{sessionId}
+ * 
+ * Note: Direct calls may have CORS issues in some environments.
  */
 app.get('/api/phone-auth/status/:sessionId', async (req, res) => {
   try {
+    const apiBaseUrl = process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app';
+    const statusUrl = `${apiBaseUrl}/public/status/${req.params.sessionId}`;
     console.log(`[Status Proxy] Fetching status for session: ${req.params.sessionId}`);
+    console.log(`[Status Proxy] Using URL: ${statusUrl}`);
     const response = await fetch(
-      `https://api.glideidentity.app/public/public/status/${req.params.sessionId}`,
+      statusUrl,
       { 
-        headers: { 'Accept': 'application/json' }
+        headers: { 
+          'Accept': 'application/json',
+          ...(process.env.GLIDE_DEV_ENV && { 'developer': process.env.GLIDE_DEV_ENV })
+        }
       }
     );
     
@@ -186,7 +218,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('='.repeat(60));
   console.log('🚀 Magical Auth Quickstart - Vanilla JavaScript');
   console.log('='.repeat(60));
@@ -212,13 +244,19 @@ app.listen(PORT, () => {
   console.log('='.repeat(60));
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
-});
+// Graceful shutdown - properly close server to free port
+function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    console.log('✅ Server closed. Port freed.');
+    process.exit(0);
+  });
+  // Force close after 3 seconds if server doesn't close
+  setTimeout(() => {
+    console.log('⚠️  Forcing shutdown...');
+    process.exit(0);
+  }, 3000);
+}
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT received. Shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
