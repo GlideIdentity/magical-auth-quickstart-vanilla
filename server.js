@@ -16,7 +16,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize Glide client with API key
-// Set GLIDE_DEV_ENV=dev7 (or dev1, dev2, etc.) to use a specific dev environment
 const glide = new GlideClient({
   apiKey: process.env.GLIDE_API_KEY,
   debug: process.env.GLIDE_DEBUG === 'true',
