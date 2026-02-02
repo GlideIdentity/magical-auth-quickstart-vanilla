@@ -33,6 +33,7 @@ const API_BASE_URL = window.location.origin; // Uses the same origin as the fron
 const API_ENDPOINTS = {
     prepare: '/api/phone-auth/prepare',
     process: '/api/phone-auth/process',
+    reportInvocation: '/api/phone-auth/invoke',  // SDK expects 'reportInvocation' key
     status: '/api/phone-auth/status',
     health: '/api/health'
 };
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         authClient = new window.GlideWebClientSDK.PhoneAuthClient({
             endpoints: {
                 prepare: API_ENDPOINTS.prepare,
+                reportInvocation: API_ENDPOINTS.reportInvocation,  // SDK expects 'reportInvocation' key
                 process: API_ENDPOINTS.process,
                 /**
                  * Polling Endpoint Configuration

@@ -8,9 +8,9 @@ Experience carrier-grade phone authentication in **2 minutes**. No SMS, no delay
 # Clone and install
 npm install
 
-# Copy environment file and add your API key
+# Copy environment file and add your OAuth2 credentials
 cp env.example .env
-# Then edit .env and replace 'your_api_key_here' with your actual API key
+# Then edit .env and add your GLIDE_CLIENT_ID and GLIDE_CLIENT_SECRET
 
 # Run it!
 npm start
@@ -52,16 +52,17 @@ magical-auth-quickstart-vanilla/
 
 **Key Difference**: Single Express server serves both the frontend AND backend API. No build step needed!
 
-## 🔧 Want Your Own API Key?
+## 🔧 Want Your Own Credentials?
 
 The quickstart works out-of-the-box with our demo server. To use your own credentials:
 
-1. Get your API key from [Glide Dashboard](https://docs.glideidentity.com/)
+1. Get your OAuth2 credentials from [Glide Dashboard](https://docs.glideidentity.com/)
 2. Create `.env` file:
 ```env
-GLIDE_API_KEY=your_api_key_here
+GLIDE_CLIENT_ID=your_client_id_here
+GLIDE_CLIENT_SECRET=your_client_secret_here
 ```
-3. Restart the server - it'll use your key automatically!
+3. Restart the server - it'll use your credentials automatically!
 
 ## 👀 See What's Happening
 
@@ -144,10 +145,10 @@ The quickstart supports multiple ways to load the SDK:
 ### Alternative: CDN
 ```html
 <!-- unpkg (auto-syncs with npm) -->
-<script src="https://unpkg.com/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script>
+<script src="https://unpkg.com/@glideidentity/glide-fe-sdk-web@5/dist/browser/web-client-sdk.min.js"></script>
 
 <!-- jsDelivr (auto-syncs with npm) -->
-<script src="https://cdn.jsdelivr.net/npm/glide-web-client-sdk@4.3.0/dist/browser/web-client-sdk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@glideidentity/glide-fe-sdk-web@5/dist/browser/web-client-sdk.min.js"></script>
 ```
 
 ## 🌟 Why Vanilla JavaScript?
@@ -156,8 +157,8 @@ The quickstart supports multiple ways to load the SDK:
 - **No framework overhead** - Pure JavaScript
 - **Easy to understand** - Simple file structure
 - **Easy to integrate** - Copy patterns into any project
-- **Web SDK** - Uses `PhoneAuthClient` from `@glideidentity/web-client-sdk`
-- **Node SDK** - Backend uses `@glideidentity/glide-sdk`
+- **Web SDK** - Uses `PhoneAuthClient` from `@glideidentity/glide-fe-sdk-web`
+- **Node SDK** - Backend uses `@glideidentity/glide-be-sdk-node`
 
 ## 💬 Need Help?
 
