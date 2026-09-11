@@ -28,15 +28,8 @@ let stepTwoResponse = null;
 let stepThreeResponse = null;
 let invokeResult = null;
 
-// API endpoint configuration
-const API_BASE_URL = window.location.origin; // Uses the same origin as the frontend
-const API_ENDPOINTS = {
-    prepare: '/api/phone-auth/prepare',
-    process: '/api/phone-auth/process',
-    reportInvocation: '/api/phone-auth/invoke',  // SDK expects 'reportInvocation' key
-    status: '/api/phone-auth/status',
-    health: '/api/health'
-};
+// The server uses the SDK default routes (/api/magical-auth/*),
+// so no custom endpoint config is needed in the SDK init below.
 
 // Get UseCase constants from the SDK (set after SDK loads)
 let USE_CASE = null;
@@ -55,43 +48,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize the auth client (v6 - callbacks removed)
         authClient = new window.GlideWebClientSDK.PhoneAuthClient({
-            endpoints: {
-                prepare: API_ENDPOINTS.prepare,
-                reportInvocation: API_ENDPOINTS.reportInvocation,  // SDK expects 'reportInvocation' key
-                process: API_ENDPOINTS.process,
-                /**
-                 * Polling Endpoint Configuration
-                 * 
-                 * This endpoint is used for desktop/QR authentication to poll for
-                 * completion status while the user authenticates on their mobile device.
-                 * 
-                 * OPTIONS:
-                 * 1. USE PROXY (current): API_ENDPOINTS.status ('/api/phone-auth/status')
-                 *    - Routes through your backend server
-                 *    - Better for debugging (see requests in server logs)
-                 *    - Avoids CORS issues
-                 *    - Respects GLIDE_API_BASE_URL for environment switching
-                 * 
-                 * 2. DIRECT CALLS: Comment out or remove this line
-                 *    - SDK will use status_url from prepare response OR
-                 *    - Fall back to: https://api.glideidentity.app/public/status/
-                 *    - May have CORS issues in some environments
-                 */
-                polling: API_ENDPOINTS.status,
-            },
-            debug: true, // Enable SDK debug logging to console for development purposes
-            /* Mobile DevTools Console
-               Uncomment the code below to enable an on-screen console for mobile testing.
-               This provides visibility into logs and errors on mobile devices where 
-               traditional browser DevTools are not easily accessible. */
+            debug: true,
+            // The SDK uses these default endpoints. Override with relative paths
+            // or full URLs to match your server setup.
+            //
+            // endpoints: {
+            //     prepare: '/api/magical-auth/prepare',
+            //     reportInvocation: '/api/magical-auth/report-invocation',
+            //     process: '/api/magical-auth/process',
+            // },
+            // Mobile DevTools Console — uncomment to enable an on-screen console
+            // for mobile testing where browser DevTools are not accessible.
+            //
             // devtools: {
-            //   showMobileConsole: true
+            //     showMobileConsole: true,
             // },
             timeout: 30000,
         });
         
         addDebugLog('info', 'PhoneAuthClient initialized (v6)', { 
-            endpoints: API_ENDPOINTS,
             USE_CASE: USE_CASE 
         });
     } else {
@@ -742,39 +717,13 @@ function updateStep2UIForError() {
 }
 
 function showResult(result) {
-    const resultDiv = document.getElementById('resultSuccess');
-    const detailsDiv = document.getElementById('resultDetails');
-    
-    // Only show verified status for verify flow
-    const verifiedLine = selectedFlowType === 'verify' 
-        ? `<p><strong>Verified:</strong> ${result.verified ? 'Yes' : 'No'}</p>`
-        : '';
-    
-    detailsDiv.innerHTML = `
-        <p><strong>Phone Number:</strong> ${result.phone_number || 'N/A'}</p>
-        ${verifiedLine}
-        ${result.aud ? `<p><strong>Audience:</strong> ${result.aud}</p>` : ''}
-    `;
-    
-    resultDiv.classList.remove('hidden');
+    showResultOverlay(result, function() {
+        if (authClient) authClient.reset?.();
+    });
 }
 
 function showGranularResult(result) {
-    const resultDiv = document.getElementById('granularResult');
-    const detailsDiv = document.getElementById('granularResultDetails');
-    
-    // Only show verified status for verify flow
-    const verifiedLine = selectedFlowType === 'verify' 
-        ? `<p><strong>Verified:</strong> ${result.verified ? 'Yes' : 'No'}</p>`
-        : '';
-    
-    detailsDiv.innerHTML = `
-        <p><strong>Phone Number:</strong> ${result.phone_number || 'N/A'}</p>
-        ${verifiedLine}
-        ${result.aud ? `<p><strong>Audience:</strong> ${result.aud}</p>` : ''}
-    `;
-    
-    resultDiv.classList.remove('hidden');
+    showResultOverlay(result, resetGranularFlow);
 }
 
 function showError(error) {
@@ -853,7 +802,7 @@ function updateDebugConsole(logEntry) {
 
 async function checkServerHealth() {
     try {
-        const response = await fetch(API_ENDPOINTS.health);
+        const response = await fetch('/api/health');
         const data = await response.json();
         
         if (data.status === 'ok') {

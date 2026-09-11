@@ -1,0 +1,49 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+
+jobs:
+  install:
+    name: Clean install (public registry)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # A lockfile resolving from our private Artifact Registry installs for us and
+      # 401s for anyone without that auth, which is how the dead ^1.0.0 pin survived.
+      - name: Assert lockfile resolves only from the public npm registry
+        run: |
+          foreign=$(grep -o '"resolved": *"[^"]*"' package-lock.json \
+            | grep -v '"resolved": *"https://registry\.npmjs\.org/' || true)
+          if [ -n "$foreign" ]; then
+            echo "::error::package-lock.json resolves from a non-public registry; external users cannot install."
+            printf '%s\n' "$foreign"
+            exit 1
+          fi
+
+      # npm install, not npm ci: this must reproduce what an external developer runs.
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      # npm install will quietly repair a lockfile that disagrees with package.json,
+      # so a green build here would otherwise say nothing about the committed one.
+      - name: Assert the install did not rewrite the lockfile
+        run: git diff --exit-code -- package-lock.json
+
+      - name: Boot server and check health
+        run: |
+          GLIDE_CLIENT_ID=ci GLIDE_CLIENT_SECRET=ci node server.js &
+          for i in $(seq 1 30); do
+            sleep 1
+            curl -sf http://127.0.0.1:3000/api/health && break
+          done
+          curl -sf http://127.0.0.1:3000/api/health
+          curl -sfo /dev/null http://127.0.0.1:3000/sdk/web-client-sdk.min.js
