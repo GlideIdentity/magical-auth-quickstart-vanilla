@@ -1076,3 +1076,86 @@ button {
         width: 100%;
     }
 }
+
+/* ============================================================================= */
+/* Result Overlay                                                                 */
+/* ============================================================================= */
+
+.ro-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, -webkit-backdrop-filter 0.35s ease;
+  padding: 1rem;
+}
+.ro-backdrop.ro-in {
+  background: rgba(15,23,42,0.45);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.ro-backdrop.ro-out {
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+}
+.ro-card {
+  position: relative; overflow: hidden;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 24px;
+  padding: 2.25rem 1.75rem 1.75rem;
+  width: 92%; max-width: 380px;
+  text-align: center;
+  box-shadow: 0 24px 48px -12px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6);
+  transform: translateY(50px) scale(0.92); opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
+}
+.ro-card-in { transform: translateY(0) scale(1); opacity: 1; }
+.ro-out .ro-card { transform: translateY(24px) scale(0.96); opacity: 0; transition: transform 0.3s ease, opacity 0.25s ease; }
+.ro-glow {
+  position: absolute; top: -30px; left: 50%;
+  transform: translateX(-50%) scale(0.4);
+  width: 200px; height: 200px; border-radius: 50%;
+  opacity: 0; filter: blur(40px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1);
+  pointer-events: none;
+}
+.ro-glow-success { background: radial-gradient(circle, rgba(5,150,105,0.4), transparent 70%); }
+.ro-glow-fail { background: radial-gradient(circle, rgba(220,38,38,0.3), transparent 70%); }
+.ro-glow-in { opacity: 1; transform: translateX(-50%) scale(1); }
+.ro-reveal { animation: ro-fade-up 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+.ro-d1 { animation-delay: 0.08s; }
+.ro-d2 { animation-delay: 0.16s; }
+.ro-d3 { animation-delay: 0.28s; }
+.ro-d4 { animation-delay: 0.36s; }
+.ro-d5 { animation-delay: 0.44s; }
+@keyframes ro-fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.ro-icon-wrap { margin: 0 auto 0.75rem; width: 68px; height: 68px; opacity: 0; }
+.ro-icon-wrap.ro-reveal { animation-delay: 0s; }
+.ro-check-svg, .ro-x-svg { width: 68px; height: 68px; }
+.ro-check-ring { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke: #059669; animation: ro-ring 0.7s 0.15s cubic-bezier(0.65,0,0.45,1) forwards; }
+.ro-check-tick { stroke-dasharray: 48; stroke-dashoffset: 48; stroke-width: 3; stroke: #059669; stroke-linecap: round; stroke-linejoin: round; animation: ro-draw 0.35s 0.6s cubic-bezier(0.65,0,0.45,1) forwards; }
+.ro-x-ring { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke: #dc2626; animation: ro-ring 0.7s 0.15s cubic-bezier(0.65,0,0.45,1) forwards; }
+.ro-x-lines { stroke-dasharray: 56; stroke-dashoffset: 56; stroke-width: 3; stroke: #dc2626; stroke-linecap: round; animation: ro-draw 0.35s 0.6s cubic-bezier(0.65,0,0.45,1) forwards; }
+@keyframes ro-ring { to { stroke-dashoffset: 0; } }
+@keyframes ro-draw { to { stroke-dashoffset: 0; } }
+.ro-title { font-size: 1.35rem; font-weight: 700; color: #0f172a; margin: 0 0 0.15rem; letter-spacing: -0.01em; opacity: 0; }
+.ro-phone { font-size: 1rem; color: #475569; font-family: 'SF Mono','JetBrains Mono',Monaco,'Cascadia Code',monospace; font-weight: 500; letter-spacing: 1px; margin: 0 0 1.25rem; opacity: 0; }
+.ro-signals { text-align: left; margin: 0 0 0.75rem; opacity: 0; }
+.ro-signals-label { display: flex; align-items: center; gap: 5px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 0.4rem; }
+.ro-signal-row { display: flex; gap: 0.75rem; align-items: flex-start; background: rgba(248,250,252,0.8); border: 1px solid rgba(226,232,240,0.8); border-radius: 14px; padding: 0.75rem; }
+.ro-sim-icon { flex-shrink: 0; color: #94a3b8; padding-top: 2px; }
+.ro-signal-body { flex: 1; min-width: 0; }
+.ro-signal-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; margin-bottom: 3px; }
+.ro-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 10px; border-radius: 99px; border: 1px solid transparent; margin-bottom: 3px; animation: ro-badge-pop 0.35s 1s cubic-bezier(0.34,1.56,0.64,1) both; }
+.ro-badge-na { background: rgba(148,163,184,0.1); color: #94a3b8; border-color: rgba(148,163,184,0.2); }
+@keyframes ro-badge-pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+.ro-signal-desc { font-size: 0.78rem; color: #475569; }
+.ro-signal-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
+.ro-aud { font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.75rem; opacity: 0; }
+.ro-aud span { font-weight: 700; font-family: 'SF Mono',monospace; background: rgba(100,116,139,0.08); padding: 1px 5px; border-radius: 4px; margin-right: 4px; }
+.ro-btn { background: rgba(241,245,249,0.9); color: #475569; border: 1px solid rgba(226,232,240,0.6); padding: 10px 36px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.15s; opacity: 0; }
+.ro-btn:hover { background: rgba(226,232,240,0.9); }
+.ro-btn:active { transform: scale(0.97); }
+.ro-countdown { font-variant-numeric: tabular-nums; opacity: 0.45; margin-left: 8px; }
+@media (max-width: 480px) { .ro-card { padding: 2rem 1.25rem 1.5rem; border-radius: 20px; max-width: 340px; } .ro-icon-wrap { width: 60px; height: 60px; } .ro-check-svg, .ro-x-svg { width: 60px; height: 60px; } }

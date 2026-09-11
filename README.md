@@ -145,10 +145,10 @@ The quickstart supports multiple ways to load the SDK:
 ### Alternative: CDN
 ```html
 <!-- unpkg (auto-syncs with npm) -->
-<script src="https://unpkg.com/@glideidentity/glide-fe-sdk-web@5/dist/browser/web-client-sdk.min.js"></script>
+<script src="https://unpkg.com/@glideidentity/glide-fe-sdk-web@3/dist/browser/web-client-sdk.min.js"></script>
 
 <!-- jsDelivr (auto-syncs with npm) -->
-<script src="https://cdn.jsdelivr.net/npm/@glideidentity/glide-fe-sdk-web@5/dist/browser/web-client-sdk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@glideidentity/glide-fe-sdk-web@3/dist/browser/web-client-sdk.min.js"></script>
 ```
 
 ## 🌟 Why Vanilla JavaScript?
